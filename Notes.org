@@ -332,4 +332,30 @@
     CLOCK: [2013-04-26 Fri 01:07]--[2013-04-26 Fri 01:12] =>  0:05
 ** DONE Add @Override annotations
    CLOCK: [2013-04-26 Fri 01:12]--[2013-04-26 Fri 01:13] =>  0:01
+** Add directed graph
+   :PROPERTIES:
+   :Effort:   25
+   :END:
+*** DONE import jgrapht stuff
+    CLOCK: [2013-04-26 Fri 01:13]--[2013-04-26 Fri 02:02] =>  0:49
+    :PROPERTIES:
+    :Effort:   5
+    :END:
+*** DONE Replace Stack with DirectedGraph
+        DirectedGraph<URL, DefaultEdge> g =
+            new DefaultDirectedGraph<URL, DefaultEdge>(DefaultEdge.class);
+*** DONE removeReadyNode
+*** DONE addEdge
+*** DONE isEmpty
+*** test Graph stuff
+    CLOCK: [2013-04-26 Fri 02:02]--[2013-04-26 Fri 02:46] =>  0:44
 
+**** make continuation out of your test code
+     CLOCK: [2013-04-26 Fri 02:46]--[2013-04-26 Fri 03:00] =>  0:14
+** DONE Make sure you remove later from the graph only after now
+   CLOCK: [2013-04-26 Fri 03:00]--[2013-04-26 Fri 03:30] =>  0:30
+*** e.g., now -> later
+*** You remove now so that you can run it
+*** But then, you see that later is ready and so you run it too... calamity
+*** so, you must remove the edge only AFTER now has finished running
+*** Plus, if you remove it eagerly, its subtasks will face a "vertex does not exist" error when trying to add an edge

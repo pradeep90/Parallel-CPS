@@ -25,7 +25,7 @@ public class Activation {
 
     public void run(){
         if (continuation == null){
-            System.out.println("Empty Continuation"); 
+            // System.out.println("Empty Continuation"); 
             return;
         }
 

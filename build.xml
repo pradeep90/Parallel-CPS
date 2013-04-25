@@ -2,14 +2,15 @@
 
   <!-- Sets variables which can later be used. -->
   <!-- The value of a property is accessed via ${} -->
-  <property name="main-package.name" value="callabletry"/>
+  <property name="main-package.name" value="scheduler"/>
   <property name="src.dir" value="src"/>
   <property name="main-package.dir" value="${src.dir}/${main-package.name}"/>
   <property name="tests-src.dir" value="tests"/>
   <property name="build.dir" value="build"/>
   <property name="classes.dir" value="${build.dir}/classes"/>
   <property name="tests-classes.dir" value="${classes.dir}/tests"/>
-  <property name="main-class" value="${main-package.name}.Factorial"/>
+  <property name="main-class" value="${main-package.name}.TryJGraph"/>
+  <property name="jgrapht.jar" value="lib/jgrapht-jdk1.6.jar"/>
   <property name="junit-home.dir" value="/usr/share/java"/>
   <property name="junit-jar.dir" value="${junit-home.dir}/junit4-4.8.2.jar"/>
   <property name="hamcrest-jar.dir" value="${junit-home.dir}/hamcrest-core-1.1.jar"/>
@@ -21,8 +22,13 @@
   <property name="microjava-jj" value="microjava.jj"/>
   <property name="jtb-jj" value="jtb.out.jj"/>
 
-  <path id="unit.test.path">
+  <path id="compile.path">
     <pathelement location="${classes.dir}"/>
+    <pathelement location="${jgrapht.jar}"/>
+  </path>
+
+  <path id="unit.test.path">
+    <path refid="compile.path"/>
     <pathelement location="${tests-classes.dir}"/>
     <pathelement location="${junit-jar.dir}"/>
     <pathelement location="${hamcrest-jar.dir}"/>
@@ -65,6 +71,7 @@
   <target name="compile" depends="makedir">
     <javac destdir="${classes.dir}" debug="on" source="1.6">
       <src path="${src.dir}"/>
+      <classpath refid="compile.path"/>
     </javac>
   </target>
 
@@ -79,10 +86,7 @@
   </target>
 
   <target name="test" depends="compileUnitTests">
-    <junit
-       printsummary="no"
-       failureproperty="junit.failure"
-       >
+    <junit printsummary="no" failureproperty="junit.failure">
 
       <jvmarg value="-Dfile.encoding=UTF-8"/>
       <classpath refid="unit.test.path"/>
@@ -112,9 +116,7 @@
   <target name="execute" depends="compile">
     <!-- TODO: Change this -->
     <java classname="${main-class}">
-      <classpath>
-	<pathelement location="${classes.dir}" />
-      </classpath>
+      <classpath refid="compile.path"/>
     </java>
   </target>
   

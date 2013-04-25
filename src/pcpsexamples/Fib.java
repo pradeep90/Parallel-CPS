@@ -28,10 +28,17 @@ public class Fib {
           
             // TODO: For now, cos I'm using a Stack, schedule them in
             // reverse order
-            scheduler.schedule(sum);
-            scheduler.schedule(right);
             scheduler.schedule(left);
+            scheduler.schedule(right);
+            scheduler.schedule(sum);
 
+            scheduler.addEdge(now, left);
+            scheduler.addEdge(now, right);
+            scheduler.addEdge(now, sum);
+            scheduler.addEdge(left, right);
+            scheduler.addEdge(right, sum);
+            scheduler.addEdge(sum, later);
+            
             // left→right; //inserted by naive translation
             // right→sum;
             // sum→later;

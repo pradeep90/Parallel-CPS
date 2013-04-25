@@ -15,10 +15,14 @@ import static org.junit.Assert.assertTrue;
 
 public class FibTest{
     Fib fib;
-    
+    Activation now;
+    Activation later;
+
     @Before
     public void setUp(){
         fib = new Fib();
+        now = new Activation();
+        later = new Activation();
     }
     
     @After
@@ -30,9 +34,19 @@ public class FibTest{
      */
     @Test
     public final void testFib_BaseCase1(){
-        Activation now = new Activation();
-        Activation later = new Activation();
-        fib.fib(1, now, later);
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void call(){
+                    fib.fib(1, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.schedule(now);
+        fib.scheduler.schedule(later);
+
+        fib.scheduler.addEdge(now, later);
+        
         fib.scheduler.tryRunTask();
         assertEquals(1, now.tempResult);
     }
@@ -42,9 +56,18 @@ public class FibTest{
      */
     @Test
     public final void testFib_BaseCase2(){
-        Activation now = new Activation();
-        Activation later = new Activation();
-        fib.fib(2, now, later);
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void call(){
+                    fib.fib(2, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.schedule(now);
+        fib.scheduler.schedule(later);
+
+        fib.scheduler.addEdge(now, later);
         fib.scheduler.tryRunTask();
         assertEquals(1, now.tempResult);
     }
@@ -54,9 +77,19 @@ public class FibTest{
      */
     @Test
     public final void testFib_RecursiveCase1(){
-        Activation now = new Activation();
-        Activation later = new Activation();
-        fib.fib(3, now, later);
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void call(){
+                    fib.fib(3, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.schedule(now);
+        fib.scheduler.schedule(later);
+
+        fib.scheduler.addEdge(now, later);
+
         fib.scheduler.tryRunTask();
         assertEquals(2, now.tempResult);
     }
@@ -66,9 +99,19 @@ public class FibTest{
      */
     @Test
     public final void testFib_RecursiveCase2(){
-        Activation now = new Activation();
-        Activation later = new Activation();
-        fib.fib(7, now, later);
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void call(){
+                    fib.fib(7, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.schedule(now);
+        fib.scheduler.schedule(later);
+
+        fib.scheduler.addEdge(now, later);
+
         fib.scheduler.tryRunTask();
         assertEquals(13, now.tempResult);
     }
