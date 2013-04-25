@@ -281,6 +281,7 @@
 ** TODO How to pass in an activation (left) to sum without initializing left?
 ** TODO Is there any reason why he does "then = now" and passes only =then= instead of =now= directly?
 * Ideas
+** Refactor after every commit
 ** TODO I want to implement my Transformation code in a declarative fashion instead of doing it in a dreary imperative fashion
 #+begin_src java
   // From visit(syntaxtree.MessageSend n):
@@ -314,8 +315,21 @@
      CLOCK: [2013-04-25 Thu 00:31]--[2013-04-25 Thu 01:20] =>  0:49
 ** DONE Write build.xml for Concurrent Programming project direct
    CLOCK: [2013-04-25 Thu 16:50]--[2013-04-25 Thu 17:07] =>  0:17
-** Flesh out Basic classes
+** DONE Flesh out Basic classes
    CLOCK: [2013-04-25 Thu 19:30]--[2013-04-25 Thu 19:39] =>  0:09
 *** Activation
     CLOCK: [2013-04-25 Thu 19:40]--[2013-04-25 Thu 19:43] =>  0:03
+*** Continuation Base class
+    CLOCK: [2013-04-26 Fri 00:19]--[2013-04-26 Fri 00:19] =>  0:00
+    CLOCK: [2013-04-25 Thu 21:54]--[2013-04-25 Thu 22:09] =>  0:15
+*** Fib
+    CLOCK: [2013-04-26 Fri 00:19]--[2013-04-26 Fri 00:25] =>  0:06
+    CLOCK: [2013-04-25 Thu 21:44]--[2013-04-25 Thu 21:54] =>  0:10
+*** DONE FibTest
+    CLOCK: [2013-04-26 Fri 00:33]--[2013-04-26 Fri 01:07] =>  0:34
+    CLOCK: [2013-04-26 Fri 00:19]--[2013-04-26 Fri 00:33] =>  0:14
+*** DONE Just realized I need a Stack, not a queue, for my trivial Scheduler.
+    CLOCK: [2013-04-26 Fri 01:07]--[2013-04-26 Fri 01:12] =>  0:05
+** DONE Add @Override annotations
+   CLOCK: [2013-04-26 Fri 01:12]--[2013-04-26 Fri 01:13] =>  0:01
 
