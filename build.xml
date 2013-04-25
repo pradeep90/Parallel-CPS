@@ -1,0 +1,125 @@
+<project name="Parallel-CPS" default="main" basedir=".">
+
+  <!-- Sets variables which can later be used. -->
+  <!-- The value of a property is accessed via ${} -->
+  <property name="main-package.name" value="callabletry"/>
+  <property name="src.dir" value="src"/>
+  <property name="main-package.dir" value="${src.dir}/${main-package.name}"/>
+  <property name="tests-src.dir" value="tests"/>
+  <property name="build.dir" value="build"/>
+  <property name="classes.dir" value="${build.dir}/classes"/>
+  <property name="tests-classes.dir" value="${classes.dir}/tests"/>
+  <property name="main-class" value="${main-package.name}.Factorial"/>
+  <property name="junit-home.dir" value="/usr/share/java"/>
+  <property name="junit-jar.dir" value="${junit-home.dir}/junit4-4.8.2.jar"/>
+  <property name="hamcrest-jar.dir" value="${junit-home.dir}/hamcrest-core-1.1.jar"/>
+  <property name="test.pattern" value="**/*Test*.java"/>
+  <property name="report.tests" value="raw-test-reports"/>
+  <property name="jtb-home" location="${user.home}/Downloads/Applications/jtb132.jar"/>
+  <property name="javacc-home"
+	    location="${user.home}/Downloads/Applications/javacc-5.0/bin/javacc"/>
+  <property name="microjava-jj" value="microjava.jj"/>
+  <property name="jtb-jj" value="jtb.out.jj"/>
+
+  <path id="unit.test.path">
+    <pathelement location="${classes.dir}"/>
+    <pathelement location="${tests-classes.dir}"/>
+    <pathelement location="${junit-jar.dir}"/>
+    <pathelement location="${hamcrest-jar.dir}"/>
+  </path>
+
+  <presetdef name="javac">
+    <javac includeantruntime="false" />
+  </presetdef>
+
+  <!-- Deletes the existing build, docs and dist directory-->
+  <target name="clean">
+    <delete dir="${build.dir}" />
+  </target>
+
+  <!-- Creates the  build, docs and dist directory-->
+  <target name="makedir">
+    <mkdir dir="${classes.dir}" />
+    <mkdir dir="${tests-classes.dir}" />
+  </target>
+
+  <target name="jtb-stuff">
+    <exec executable="java" dir="${main-package.dir}">
+      <arg value="-jar"/>
+      <arg value="${jtb-home}"/>
+      <arg value="-printer"/>
+      <arg value="${microjava-jj}"/>
+      <arg value="-p"/>
+      <arg value="scheduler"/>
+    </exec>
+  </target>
+
+  <target name="javacc-stuff">
+    <exec executable="${javacc-home}" dir="${main-package.dir}">
+      <arg value="-STATIC=false"/>
+      <arg value="${jtb-jj}"/>
+    </exec>
+  </target>
+
+  <!-- Compiles the java code (including the usage of library for JUnit -->
+  <target name="compile" depends="makedir">
+    <javac destdir="${classes.dir}" debug="on" source="1.6">
+      <src path="${src.dir}"/>
+    </javac>
+  </target>
+
+  <target name="compileUnitTests" depends="compile">
+    <javac srcdir="${tests-src.dir}"
+	   destdir="${tests-classes.dir}"
+	   debug="on"
+	   source="1.6">
+      <classpath refid="unit.test.path"/>
+      <compilerarg value="-Xlint" />
+    </javac>
+  </target>
+
+  <target name="test" depends="compileUnitTests">
+    <junit
+       printsummary="no"
+       failureproperty="junit.failure"
+       >
+
+      <jvmarg value="-Dfile.encoding=UTF-8"/>
+      <classpath refid="unit.test.path"/>
+
+      <!-- For outputting reports on each Test class -->
+      <formatter type="brief" usefile="false"/>
+
+      <!-- <batchtest fork="yes" todir="${report.tests}"> -->
+      <batchtest fork="yes" todir="tmp/rawtestoutput">
+	<fileset dir="${tests-src.dir}">
+          <include name="${test.pattern}"/>
+          <exclude name="**/AllTests.java"/>
+	</fileset>
+        <!-- <formatter type="xml"/> -->
+      </batchtest>
+    </junit>
+
+    <!-- To generate an HTML report -->
+    <!-- <junitreport todir="tmp"> -->
+    <!--   <fileset dir="tmp/rawtestoutput"/> -->
+    <!--   <report todir="unit-tests-reports/"/> -->
+    <!-- </junitreport> -->
+
+    <fail if="junit.failure" message="Unit test(s) failed.  See reports!"/>
+  </target>
+
+  <target name="execute" depends="compile">
+    <!-- TODO: Change this -->
+    <java classname="${main-class}">
+      <classpath>
+	<pathelement location="${classes.dir}" />
+      </classpath>
+    </java>
+  </target>
+  
+  <target name="main" depends="compile, execute">
+    <description>Main target</description>
+  </target>
+
+</project>
