@@ -1,0 +1,138 @@
+% Created 2013-04-09 Tue 13:24
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{soul}
+\usepackage{t1enc}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\usepackage{fullpage}
+\setlength{\parskip}{0.1cm}
+\providecommand{\alert}[1]{\textbf{#1}}
+
+\title{Concurrent Programming: Project Proposal}
+\author{S Pradeep Kumar, Mahesh Gupta}
+\date{2013-04-09 Tue}
+
+\begin{document}
+
+\maketitle
+
+
+                               
+\section*{Problem Statement}
+\label{sec-1}
+
+  Automatically extract parallelism from a sequential program for running on a multi-core processor
+
+  Area: Languages and Compilers
+\section*{What are we going to do?}
+\label{sec-2}
+
+\begin{itemize}
+\item Definitely: Given a program in Continuation-Passing Style (CPS) form, we will convert it into parallel CPS (pCPS), which will use the Futures synchronization construct to achieve speedup.
+\item Maybe: Given a program in Java (called MicroJava) we will convert it to an intermediate form called NanoJava which is in CPS.
+\item Possibly: Use some heuristics to avoid creating Futures for some parts of the code and treat loops specially so that we can extract more parallelization.
+\end{itemize}
+\section*{Why is it interesting?}
+\label{sec-3}
+
+\begin{itemize}
+\item By automatically converting CPS code into pCPS, we can get faster programs without manually parallelizing the code.
+\item It is also interesting because we will use Futures to extract parallelism. We will start computations as usual but delay the actual extraction of the result as long as possible. This way we hope to have multiple computations running in parallel.
+\end{itemize}
+\section*{Language / Libraries}
+\label{sec-4}
+
+\begin{itemize}
+\item We tentatively plan to use Java to implement the program which translates Sequential code to CPS code and then to pCPS code.
+\item Libraries:
+
+\begin{enumerate}
+\item JavaCC for parsing the code
+\item Java Tree Builder (JTB) for building Visitors for the parse trees
+\end{enumerate}
+
+\item Algorithms:
+
+\begin{itemize}
+\item We will use some standard algorithm (after surveying the literature) for pushing the use of a variable as far down as possible in a block of code. Note that this would mean transitively pushing other statements down as well to get the optimal code.
+\end{itemize}
+
+\end{itemize}
+\section*{Testing and Experimentation strategy}
+\label{sec-5}
+
+\begin{itemize}
+\item Experimenting with the speed of a naive pCPS translation and comparing against the sequential program
+\item Experimenting with the heuristics for inserting Futures to get more speedup
+    
+    e.g., using a Thread pool, delaying usage of the Future's result to maximize parallelism, etc.
+\item Experimenting with preserving loops to generate efficient code
+\item Experimenting with Tail-call optimization
+\end{itemize}
+\section*{Benchmarks}
+\label{sec-6}
+
+  Matrix Multiplication, Signal convolution, Mergesort, Threshold program, Shuffle program
+\section*{Timeline and Division of labour}
+\label{sec-7}
+\begin{itemize}
+
+\item Definitely
+\label{sec-7_1}%
+\begin{itemize}
+\item \textbf{\textit{2013-04-16 Tue}} Finish naively translating 4 programs manually to pCPS form and test speedup (if any)
+
+     This is without thread pools, i.e., simply using Futures for parallelization
+
+\begin{itemize}
+\item 2 programs [Pradeep]
+\item 2 programs [Mahesh]
+\end{itemize}
+
+\item \textbf{\textit{2013-04-20 Sat}} [Pradeep] Use Thread pools to reduce overhead of creating threads
+\item \textbf{\textit{2013-04-20 Sat}} [Mahesh] Manually push down the code using the return value of Futures and test speedup
+\item \textbf{\textit{2013-04-22 Mon}} [Pradeep] Manually preserve loops in CPS and optimize them
+\item \textbf{\textit{2013-04-22 Mon}} [Mahesh] Try finding a VM with tail-call optimization and test speedup
+\item \textbf{\textit{2013-04-26 Fri}} [Pradeep] Translate CPS to pCPS (which will have a Thread pool)
+\item \textbf{\textit{2013-04-26 Fri}} [Mahesh] Write algorithm to automatically push down the usage of Future's result
+\item \textbf{\textit{2013-05-03 Fri}} [Together] Final presentation
+\end{itemize}
+
+
+\item Maybe
+\label{sec-7_2}%
+\begin{itemize}
+\item \textbf{\textit{2013-05-04 Sat}} [Pradeep] Microjava to CPS
+\item \textbf{\textit{2013-05-04 Sat}} [Mahesh] Combining some Futures together
+\end{itemize}
+
+
+\item Possibly
+\label{sec-7_3}%
+\begin{itemize}
+\item \textbf{\textit{2013-05-06 Mon}} [Pradeep] Automatically preserve loops
+\item \textbf{\textit{2013-05-06 Mon}} [Mahesh] Avoid creating Futures for some parts of the code
+\end{itemize}
+
+
+\item Definitely
+\label{sec-7_4}%
+\begin{itemize}
+\item \textbf{\textit{2013-05-08 Wed}} [Together] Final report
+\end{itemize}
+
+\end{itemize} % ends low level
+
+\end{document}

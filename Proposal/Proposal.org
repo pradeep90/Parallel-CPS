@@ -1,0 +1,89 @@
+#+TITLE:     Concurrent Programming: Project Proposal
+#+AUTHOR:    S Pradeep Kumar, Mahesh Gupta
+#+EMAIL:     spradeep@aghilan.cse.iitm.ac.in
+#+DATE:      2013-04-09 Tue
+#+DESCRIPTION: 
+#+KEYWORDS: 
+#+LANGUAGE:  en
+#+OPTIONS:   H:1 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:   
+#+LINK_HOME: 
+#+XSLT: 
+
+#+LATEX_HEADER: \usepackage{fullpage}
+#+LaTeX_CLASS_OPTIONS: [10pt]
+#+LATEX_HEADER: \setlength{\parskip}{0.1cm}
+			       
+* Problem Statement
+  Automatically extract parallelism from a sequential program for running on a multi-core processor
+
+  Area: Languages and Compilers
+* What are we going to do?
+  - Definitely: Given a program in Continuation-Passing Style (CPS) form, we will convert it into parallel CPS (pCPS), which will use the Futures synchronization construct to achieve speedup.
+# - We will define a subset of Java called pCPS which would use "Futures" for computations.
+  - Maybe: Given a program in Java (called MicroJava) we will convert it to an intermediate form called NanoJava which is in CPS.
+#    - This will be the input for the previous step.
+#    - This way we can parallelize a normal Java program without needing another program to convert it into CPS first.
+  - Possibly: Use some heuristics to avoid creating Futures for some parts of the code and treat loops specially so that we can extract more parallelization.
+#    - This is because converting loops into CPS may degrade the performance.
+* Why is it interesting?
+#  - The IR for most compilers is either Static Single Assignment (SSA) or Continuation-Passing Style (CPS). Neither have any default support for parallelism.
+  - By automatically converting CPS code into pCPS, we can get faster programs without manually parallelizing the code.
+  - It is also interesting because we will use Futures to extract parallelism. We will start computations as usual but delay the actual extraction of the result as long as possible. This way we hope to have multiple computations running in parallel.
+* Language / Libraries
+  + We tentatively plan to use Java to implement the program which translates Sequential code to CPS code and then to pCPS code.
+  + Libraries:
+    1. JavaCC for parsing the code
+    2. Java Tree Builder (JTB) for building Visitors for the parse trees
+  + Algorithms:
+    + We will use some standard algorithm (after surveying the literature) for pushing the use of a variable as far down as possible in a block of code. Note that this would mean transitively pushing other statements down as well to get the optimal code.
+* Testing and Experimentation strategy
+  - Experimenting with the speed of a naive pCPS translation and comparing against the sequential program
+# *** First, since the crux of this project is the speed of the pCPS code we generate, we will manually convert a few standard Java programs into pCPS and then evaluate the speedup we achieve with Futures so that we know our approach is worthwhile.
+  - Experimenting with the heuristics for inserting Futures to get more speedup
+    
+    e.g., using a Thread pool, delaying usage of the Future's result to maximize parallelism, etc. 
+
+# Based on our results in the testing above, we will refine our algorithm for creating Futures.
+# *** We are given to understand that implementations of Lazy Programming generally depend on a lot of heuristics for improving performance.
+
+# We will have to test lots of heuristics by trial and error until we achieve a satisfactory speedup.
+# **** e.g., trying to push the usage of result of a computation as much as possible by changing the order of statements
+# **** experimenting with using a Thread pool and a mini-scheduler to assign computations to the threads so that we avoid the overhead of spawning and joining Threads
+# **** experimenting with the minimum size of a computation that we assign to a Future, possibly combining multiple tasks into one to avoid unnecessary overhead
+  - Experimenting with preserving loops to generate efficient code
+# *** The naive way of having recursive function equivalents of loops in CPS form would probably be very inefficient.
+# *** We can try preserving loops while converting to CPS so that we can generate efficient code in pCPS.
+# *** Most execution time of a scientific program is spent on loops.
+  - Experimenting with Tail-call optimization
+# *** In the default JVM, there is no tail-call optimization which is crucial for CPS.
+# *** Since we are using pCPS, we probably don't need tail-call optimization.
+# *** But it is worth testing. 
+* Benchmarks
+  Matrix Multiplication, Signal convolution, Mergesort, Threshold program, Shuffle program
+* Timeline and Division of labour
+** Definitely
+   - *[2013-04-16 Tue]* Finish naively translating 4 programs manually to pCPS form and test speedup (if any)
+
+     This is without thread pools, i.e., simply using Futures for parallelization
+     - 2 programs [Pradeep]
+     - 2 programs [Mahesh]
+   - *[2013-04-20 Sat]* [Pradeep] Use Thread pools to reduce overhead of creating threads
+   - *[2013-04-20 Sat]* [Mahesh] Manually push down the code using the return value of Futures and test speedup
+   - *[2013-04-22 Mon]* [Pradeep] Manually preserve loops in CPS and optimize them
+   - *[2013-04-22 Mon]* [Mahesh] Try finding a VM with tail-call optimization and test speedup
+   - *[2013-04-26 Fri]* [Pradeep] Translate CPS to pCPS (which will have a Thread pool)
+   - *[2013-04-26 Fri]* [Mahesh] Write algorithm to automatically push down the usage of Future's result
+   - *[2013-05-03 Fri]* [Together] Final presentation
+** Maybe
+   - *[2013-05-04 Sat]* [Pradeep] Microjava to CPS
+   - *[2013-05-04 Sat]* [Mahesh] Combining some Futures together
+** Possibly
+   - *[2013-05-06 Mon]* [Pradeep] Automatically preserve loops
+   - *[2013-05-06 Mon]* [Mahesh] Avoid creating Futures for some parts of the code
+** Definitely
+   - *[2013-05-08 Wed]* [Together] Final report

@@ -1,0 +1,303 @@
+				Implementation Notes
+
+* pCPS
+** Resources
+*** https://github.com/chmaruni/XSched
+** [[file:Papers/Parallel-CPS-Papers/Static-Analysis-of-Dynamic-Schedules-angerer2010lcpc.pdf][Static Analysis Of Dynamic Schedules]]
+*** Section 4.3 - Dependence Reduction by removing -> statements
+**** This does it by calculating read- and write-sets
+** So, basically, this + the original pCPS paper should be enough for me to get a rudimentary version working
+** DONE The only confusion now: when does the whole analysis take place?
+*** The schedule construction and optimization and stuff?
+*** Runtime?
+*** VVIP Static analysis?
+**** You actually take a method and optimize the schedule that the compiler will generate for it
+** VVIP Why do we pass in =Activation later=?
+*** i.e., why left = fib(n - 1, sum) instead of just left = fib(n - 1, <nothing>)?
+*** So that the tasks scheduled within left will also happen-before sum.
+*** Else, you could have left -> sum, and left -> something-else, but something-else and sum could happen in parallel. WRONG!
+** VVIP I think I'll have to use MiniJava cos in MicroJava a method stores its return value in an attribute which will cause calls to the same method to appear as if they have a data race
+*** TODO Or maybe, MiniJava with MessageSend Statement so that we don't have to deal with the headache of serializing method calls
+*** Or, to make it cleaner, MicroJava with return values
+** I think there might be a problem when left sets its value in sum (so that sum can add it to =right='s value). Data race cos both left and right are accessing sum.
+*** VVIP Somehow send in a reference to left to sum at the time of creation
+** We would be left with just as many classes as there would be in the real CPS version, cos schedule(fib()) would mean that
+*** We have to subclass MethodCall and put the "fib()" code in it
+*** If we do that for all function calls (all tail form statements, essentially) we end up creating classes equivalent to the Continuation classes we create in real CPS
+** VVIP So, we use as many classes (i.e., anonymous functions) as in CPS but we bundle them into tasks and schedule them within the original method so that we can optimize
+** pCPS = Explicit scheduling (happens-before relation) + making functions into continuations/tasks so that we can automatically derive the happens-before relations
+*** Explicit scheduling can be used anywhere. We just have to manually specify that a -> b
+*** By breaking up a method into continuations (closures generally, but here continuation objects) and then scheduling them as tasks, we can analyze them and add happens-before relations between them as needed
+*** We can then optimize the schedule statically
+*** TODO Once we know who comes after you, you can pass that on to the subtasks you create, so they'll happen-before your successor
+**** I think this is how it should be done
+**** The paper though, somehow passes sum to left right from the beginning, before the optimization has been done
+*** VVIP That's why it is called pCPS, cos you're getting your successor as an argument
+*** pCPS vs CPS
+**** Relax tail-call restriction
+***** Allow more than one successor
+* DONE Central Question: How to translate MicroJava into pCPS?
+** Do I need to convert it into CPS before I convert it into pCPS?
+** The fib example in the paper is deceptively simple. Doesn't show us the real complexity of the algorithm
+** VVIP The main idea is that you add "left -> right" but you send "sum" as an argument to left so that the tasks that left creates will happen-before sum
+*** DONE Question: Couldn't you just send in "right" and then use your optimizer to change the edges to actually point to "sum"?
+*** Ok, so my idea is that we leave that place blank initially. Do the optimization.
+*** Then, once you know your successor for sure, take it in as an argument
+** DONE Ok. Assume I can somehow get pCPS code from MicroJava. How do I optimize the schedule? Which edges do I remove?
+*** VVIP Basic optimization: Remove edges between 2 methods which only access local variables (and do not modify the argument object)
+**** They should not modify their parent object either
+**** VVIP In other words, pure functions
+**** TODO But this method may be defined in terms of other method calls. How do I ensure that they too are pure functions?
+**** First attempt:
+***** Construct a static call graph between methods
+***** VVIP Assume no inheritance, hence no dynamic binding. So there is no ambiguity about which method calls which methods
+***** Mark the methods that access non-local stuff. Remove them. Remove all methods which depend on marked methods.
+***** The remaining methods may be mutually recursive, but they are pure.
+**** VVIP In other words, for now, assume there is an oracle boolean function which tells you which edges are unnecessary
+*** Advanced optimization: Remove edges between 2 activations if their read- and write-sets are disjoint
+**** But this seems VERY complex. Don't want to bite off more than I can chew.
+*** VVIP For now, just have an interface through which some other code can answer isNecessary(a -> b)
+* Code examples
+** Sample code
+#+begin_src java
+  a = f();
+  b = g();
+  c = a + b;
+  d = a * b;
+  e = h(c + d);
+  return h(e * 10);
+#+end_src
+** Sample code in CPS
+#+begin_src java
+  f(L(a){
+          g(L(b){
+                  c = a + b;
+                  d = a * b;
+                  h(c + d, L(e){
+                          h(e * 10, k);
+                      });
+              });
+      });
+  
+#+end_src
+** Apparent pCPS
+#+begin_src java
+  four = schedule(L(e){
+          h(e * 10);
+      });
+  three = schedule(L(b){
+          c = a + b;
+          d = a * b;
+          h(c + d);
+      }, four);
+  two = schedule(g(), three);
+  one = schedule(f(), two);
+  
+#+end_src
+** Java pCPS
+#+begin_src java
+  class ContinuationOne extends Continuation {
+      public void call(Activation later){
+          f();
+      }
+  }
+  
+  class ContinuationFour extends Continuation {
+      public void call(Activation later){
+          g();
+      }
+  }
+  
+  class ContinuationThree extends Continuation {
+      public void call(Activation later){
+          c = a + b;
+          d = a * b;
+          h(c + d, later);
+      }
+  }
+  
+  class ContinuationFour extends Continuation {
+      public void call(Activation later){
+          h(e * 10, later);
+      }
+  }
+  
+  four = schedule(new ContinuationFour(),
+                  new NullActivation());
+  three = schedule(new ContinuationThree(), four);
+  two = schedule(new ContinuationTwo(), three);
+  one = schedule(new ContinuationOne(), two);
+  
+#+end_src
+* Fib example
+** original pCPS
+#+begin_src java
+  task fib(int k, Activation later) {
+      if (k <= 2) {
+          now.res = 1;
+      } else {
+          //make left and right available inside closure
+          Activation left;
+          Activation right;
+          Activation then = now;
+          Activation sum = sched(fun(){
+                  //sum ’returns’ for fib()
+                  then.res = ((int)left.res)
+                  + ((int)right.res);
+              });
+          left = sched(fib(k-1, sum));
+          right = sched(fib(k-2, sum));
+          left→right; //inserted by naive translation
+          right→sum;
+          sum→later;
+      }
+  }
+#+end_src
+** my original pCPS
+#+begin_src java
+  task fib(int k, Activation later) {
+      if (k <= 2) {
+          now.res = 1;
+      } else {
+          //make left and right available inside closure
+          Activation left = new Activation();
+          Activation right = new Activation();
+          Activation sum = new Activation();
+          Activation then = now;
+
+          schedule(left, new ContinuationLeft(k, right));
+          schedule(right, new ContinuationRight(k, sum));
+          schedule(sum, new ContinuationSum(then, left, right, later));
+          left→right; //inserted by naive translation
+          right→sum;
+          sum→later;
+      }
+  }
+    
+    
+  class Continuation{
+      public void call(){
+      }
+  }
+    
+  class ContinuationLeft extends Continuation {
+      int k;
+      Activation later;
+    
+      public ContinuationLeft(int k, Activation later){
+          this.k = k;
+          this.later = later;
+      }
+        
+      public void call(){
+          fib(k - 1, later);
+      }
+  }
+    
+  class ContinuationRight extends Continuation {
+      int k;
+      Activation later;
+    
+      public ContinuationLeft(int k, Activation later){
+          this.k = k;
+          this.later = later;
+      }
+        
+      public void call(){
+          fib(k - 2, later);
+      }
+  }
+    
+  class ContinuationSum extends Continuation {
+      Activation later;
+    
+      public ContinuationLeft(Activation then, Activation left, Activation right, Activation later){
+          this.then = then;
+          this.left = left;
+          this.right = right;
+          this.later = later;
+      }
+        
+      public void call(){
+          //sum ’returns’ for fib()
+          then.res = ((int)left.res)
+                  + ((int)right.res);
+      }
+  }
+    
+    
+#+end_src
+* Plan
+** Scheduler
+*** directed graph
+**** Node<T extends Continuation> (???)
+*** schedule(): Activation * Continuation -> void
+**** Modify Activation
+*** addEdge(): Activation * Activation -> void
+*** removeReadyNode(): Graph -> Node
+**** remove one node with in-degree = 0 from the graph
+*** tryRunTask()
+**** if no Ready node, wait for ready node
+**** if no free thread, wait for free thread
+**** node = removeReadyNode()
+**** schedule node to run in a thread
+***** For testing, this could just be node.call()
+*** For the initial version, I don't need to have thread pools and stuff.
+**** I can just print the name of each task as I do node.call() and just let it run sequentially.
+**** This way I can check that my scheduler schedules tasks correctly
+*** What behaviour do I have to ensure and test?
+**** It must execute tasks in the order of the schedule
+***** This property is guaranteed by the graph's removeReadyNode() method.
+**** It must execute as many parallel tasks as possible (in the thread pool)
+** What are the classes I need?
+*** Scheduler
+*** Continuation
+*** Activation
+*** Graph
+*** Node??
+** Continuation
+*** call()
+** Activation
+*** result
+*** getResult()
+*** setResult()
+* Questions
+** TODO How to pass in an activation (left) to sum without initializing left?
+** TODO Is there any reason why he does "then = now" and passes only =then= instead of =now= directly?
+* Actions
+** Think about design
+   CLOCK: [2013-04-24 Wed 12:20]--[2013-04-24 Wed 18:20] =>  6:00
+** DONE Try compiling with the JGraphT jar
+   CLOCK: [2013-04-24 Wed 18:22]--[2013-04-24 Wed 19:19] =>  0:57
+** DONE Get Ant to work for Inliner code
+*** Mock project
+    CLOCK: [2013-04-24 Wed 21:33]--[2013-04-24 Wed 21:33] =>  0:00
+    CLOCK: [2013-04-24 Wed 19:19]--[2013-04-24 Wed 20:49] =>  1:30
+*** Inliner
+    CLOCK: [2013-04-24 Wed 21:43]--[2013-04-24 Wed 21:56] =>  0:13
+**** DONE make compile
+     CLOCK: [2013-04-24 Wed 21:56]--[2013-04-24 Wed 22:19] =>  0:23
+**** DONE make run
+**** DONE make test
+     CLOCK: [2013-04-24 Wed 22:19]--[2013-04-25 Thu 00:29] =>  2:10
+**** DONE jtb
+     CLOCK: [2013-04-25 Thu 00:31]--[2013-04-25 Thu 01:20] =>  0:49
+** DONE Write build.xml for Concurrent Programming project direct
+   CLOCK: [2013-04-25 Thu 16:50]--[2013-04-25 Thu 17:07] =>  0:17
+** Flesh out Scheduler
+*** Class
+** 
+* Ideas
+** TODO I want to implement my Transformation code in a declarative fashion instead of doing it in a dreary imperative fashion
+#+begin_src java
+  // From visit(syntaxtree.MessageSend n):
+  
+  // MicroJava equivalent of MessageSend:
+  
+  Type temp;
+  temp = primaryExpression;
+  temp.foo(args);
+  temp2 = temp.____foo_ret_val____;
+  // temp2 is the final expression
+#+end_src
+*** Basically, some sort of code-rewriting mechanism. A DSL is in order here, methinks.

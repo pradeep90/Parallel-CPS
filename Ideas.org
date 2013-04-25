@@ -1,0 +1,91 @@
+				Ideas
+
+* Parallel CPS
+** Racket - [[http://pre.racket-lang.org/docs/html/guide/performance.html#(part._effective-futures)][Futures]]
+** [[http://pre.racket-lang.org/docs/html/reference/threads.html#(def._((quote._~23~25kernel)._thread))][Threads]]
+** [[http://pre.racket-lang.org/docs/html/guide/performance.html#(part._effective-places)][Places]]
+** Scheme with Futures: Incremental Parallelization in a Language Virtual Machine
+https://docs.google.com/viewer?a=v&q=cache:Ao8J140c1iEJ:plt.eecs.northwestern.edu/swaine-masters.pdf+&hl=en&gl=in&pid=bl&srcid=ADGEESgT8jXBohUN4e5LfaSgSfyLC_T8sP1_K0JpTxVnJRPqOkKqQtfVWT8Ry5kRBH3jtMw-XrbSzoJnZPVZEp0TNAOHDRf8CVU5Vo6lKwYb27Ox0xvl4x2XjEQDICzPgB7VH4HsuzpU&sig=AHIEtbT5by_9LYMac0SVdXQHBLZ0B5uPPA
+** http://scriptstoprograms.wordpress.com/2011/09/25/benchmarketing/
+** VVIP Note: Most of the time in a program is spent within loops. This should be our main focus??
+** TODO http://stackoverflow.com/questions/15648579/how-to-map-a-function-over-a-list-in-parallel-in-racket
+*** Answer: If you mean over multiple processor cores, then the most general approach is to use Places.
+**** Places enable the development of parallel programs that take advantage of machines with multiple processors, cores, or hardware threads.
+**** A place is a parallel task that is effectively a separate instance of the Racket virtual machine. Places communicate through place channels, which are endpoints for a two-way buffered communication
+* Assume that there will be no errors
+* CPS resources
+** http://matt.might.net/articles/cps-conversion/
+** http://tmp.barzilay.org/cont.txt
+* Parallel CPS paper: A compiler representation for Incremental Parallelization
+** Idea
+*** Use pCPS as the intermediate representation
+*** First, translate a sequential program into a form with explicit scheduling
+*** Gradually increase the parallelism by removing happens-before constraints whenever possible
+** Both forms (SSA and CPS), however, have a serious drawback when it comes to multicore systems: Neither one has any support for parallelism.
+*** In CPS, for example, the call to the continuation function must be in tail-position; that is, it must be the last thing the function does.
+*** Because there can be only one such tail-call, a function cannot fork computation in CPS.
+*** This makes CPS inherently single-threaded.
+** Sequence of function calls -> sequence of sched() statements in pCPS
+** The part that uses the results needs to be wrapped into a single task
+** So, it's Sequential Program -> pCPS Program
+** TODO Questions
+*** How to convert Racket to pCPS? Which library do I use? Which language? JavaCC and JTB? Or something in Racket itself?
+*** How is the directly translated pCPS program guaranteed to be in CPS?
+*** VVIP How do we know if an edge in the task execution graph is necessary or not?
+*** VVIP Is pCPS only CPS for name's sake? Basically, can I execute pCPS efficiently in Java without overflowing the stack (cos of lack of tail-call optimization)?
+*** Can I do this in Java itself? Basically, if the pCPS seems to be CPS only in name's sake, can I just schedule Java stuff in the task execution graph as per the paper and go ahead and get parallelism?
+* Alternate papers :ARCHIVE:
+** Continuation-Passing C
+*** Compiling threads to events through continuations
+*** Gabriel Kerneis · Juliusz Chroboczek
+** Continuation-Based Parallel Implementation of Functional Languages
+*** J.-F. Giorgi
+*** D. Le Mbtayer
+* My Parallel CPS
+** My hypothesis: All the extractable parallelism from CPS and Futures is gonna be in the cases where you have a method call at the end instead of a k.call()
+** Assumption: I think it is safe to assume for now that there isn't much computation done in all the sequential "Simple Statements" initialization
+** Idea for passing the necessary values from the method call to its continuation, which is running in parallel
+*** VVIP Basically, both should share an Object which will have a bunch of "Pipes" (viz. the arguments for k.call())
+*** the method should send the argument values down the "Pipes"
+*** the continuation should get() values for arguments it needs from the corresponding "Pipe"
+** Wait a minute! What do you mean "necessary VALUES"? There's only one value that is returned from a method. So, it's just ONE Future.
+** My "Pipe" = Future
+*** It's just that I implement the Future interface and make the method call set() the value
+*** Then, the continuation can get() the value thinking it is a usual Future
+*** TODO But what about blocking when the value is not yet ready?
+**** You have to do it manually. "sharedObj.wait()"??
+***** http://tutorials.jenkov.com/java-concurrency/thread-signaling.html#waitnotify
+**** TODO FutureTask seems to use Sync class which uses something called "AQS" - AbstractQueuedSynchronizer
+http://grepcode.com/file/repository.grepcode.com/java/root/jdk/openjdk/7-b147/java/util/concurrent/FutureTask.java#FutureTask.Sync
+** TODO Transform "foo.bar(arguments, k)" into
+*** future1 = new Callable({foo.bar(arguments, new FillFutureFields())})
+*** k.start(future1)
+*** where future1 is an object which will contain the Future arguments that k.call() needs
+*** FillFutureFields will fill the fields of 
+** In this way, the continuation and the method will run in parallel as much as possible
+** Also, we can make it so that each individual argument is a Future so that there is as little waiting as possible
+* TODO Use cases
+** fib(k) = fib(k - 1) + fib(k - 2)
+** put fib(k - 1) and fib(k - 2) in threads and get their futures
+** make a future out of { fut(fib(k - 1)) + fut(fib(k - 2)) }
+** return it
+* Papers for Automatic Parallelization using Futures
+** [[file:Papers/Profiling-Java-Programs-for-Profiling.pdf][Profiling Java Programs For Profiling]]
+*** Analyze dynamic data dependences of a program run
+*** Recommend locations with highest potential for parallelization
+** VVIP Automatic Parallelization using AutoFutures
+*** Identify parallelizable locations in sequential code
+*** Use Futures for parallelism
+* Plan for Implementation
+** Major Roadblock:
+*** x = a.method1() + a.method2()
+*** both update the same attribute in "a"
+*** Gone! Major Race conditions if I run them in parallel
+*** So, I think I need to do some static analysis to see if there are any data dependences between the two methods
+** TODO My options
+*** Do some simple data dependence analysis and take the least constrained cases 
+*** Try to get away with the condition that two methods must not access the same field in the object
+*** TODO Implement CPS + Futures in Racket
+*** TODO Go back to the pCPS idea and implement it using whatever simple static analysis he recommends
+**** 
+**** Datalog
