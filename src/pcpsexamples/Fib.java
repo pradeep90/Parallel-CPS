@@ -22,7 +22,7 @@ public class Fib {
             Activation sum = new Activation();
             Activation then = now;
   
-            left.continuation = new ContinuationLeft(k, this, left, right);
+            left.continuation = new ContinuationLeft(k, this, left, sum);
             right.continuation = new ContinuationRight(k, this, right, sum);
             sum.continuation = new ContinuationSum(then, left, right, sum, later);
           
@@ -35,7 +35,7 @@ public class Fib {
             scheduler.addEdge(now, left);
             scheduler.addEdge(now, right);
             scheduler.addEdge(now, sum);
-            scheduler.addEdge(left, right);
+            scheduler.addEdge(left, sum);
             scheduler.addEdge(right, sum);
             scheduler.addEdge(sum, later);
             

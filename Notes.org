@@ -277,6 +277,12 @@
 ** Result
 *** Subclass into different types ???
 *** For now assume you have a hardcoded class for each of the primitive types and explicit casting to and from Object for the others
+** Overall plan
+*** mini java -> cps
+*** cps -> pcps (activations + trivial schedule)
+*** trivial schedule -> optimized schedule 
+*** pcps + new schedule -> optimized pcps
+*** pcps + scheduler -> parallelism
 * Questions
 ** TODO How to pass in an activation (left) to sum without initializing left?
 ** TODO Is there any reason why he does "then = now" and passes only =then= instead of =now= directly?
@@ -347,10 +353,10 @@
 *** DONE removeReadyNode
 *** DONE addEdge
 *** DONE isEmpty
-*** test Graph stuff
+*** DONE test Graph stuff
     CLOCK: [2013-04-26 Fri 02:02]--[2013-04-26 Fri 02:46] =>  0:44
 
-**** make continuation out of your test code
+**** DONE make continuation out of your test code
      CLOCK: [2013-04-26 Fri 02:46]--[2013-04-26 Fri 03:00] =>  0:14
 ** DONE Make sure you remove later from the graph only after now
    CLOCK: [2013-04-26 Fri 03:00]--[2013-04-26 Fri 03:30] =>  0:30
@@ -359,3 +365,5 @@
 *** But then, you see that later is ready and so you run it too... calamity
 *** so, you must remove the edge only AFTER now has finished running
 *** Plus, if you remove it eagerly, its subtasks will face a "vertex does not exist" error when trying to add an edge
+** Thread pool
+** Make Fib.java look like a complete MiniJava program
