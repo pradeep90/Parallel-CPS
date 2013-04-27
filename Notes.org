@@ -248,6 +248,7 @@
 *** tryRunTask()
 **** if no Ready node, wait for ready node
 **** if no free thread, wait for free thread
+***** or should it be enqueue task?
 **** node = removeReadyNode()
 **** schedule node to run in a thread
 ***** For testing, this could just be node.call()
@@ -258,6 +259,7 @@
 **** It must execute tasks in the order of the schedule
 ***** This property is guaranteed by the graph's removeReadyNode() method.
 **** It must execute as many parallel tasks as possible (in the thread pool)
+*** TODO Threads
 ** What are the classes I need?
 *** Scheduler
 *** Continuation
@@ -301,6 +303,7 @@
   // temp2 is the final expression
 #+end_src
 *** Basically, some sort of code-rewriting mechanism. A DSL is in order here, methinks.
+** Try to use preconditions
 * Actions
 ** Think about design
    CLOCK: [2013-04-24 Wed 12:20]--[2013-04-24 Wed 18:20] =>  6:00
@@ -338,7 +341,7 @@
     CLOCK: [2013-04-26 Fri 01:07]--[2013-04-26 Fri 01:12] =>  0:05
 ** DONE Add @Override annotations
    CLOCK: [2013-04-26 Fri 01:12]--[2013-04-26 Fri 01:13] =>  0:01
-** Add directed graph
+** DONE Add directed graph
    :PROPERTIES:
    :Effort:   25
    :END:
@@ -365,5 +368,12 @@
 *** But then, you see that later is ready and so you run it too... calamity
 *** so, you must remove the edge only AFTER now has finished running
 *** Plus, if you remove it eagerly, its subtasks will face a "vertex does not exist" error when trying to add an edge
+** Scheduler
+*** DONE Changing the Graph changes the set returned by vertexSet()
+    CLOCK: [2013-04-27 Sat 16:36]--[2013-04-27 Sat 18:17] =>  1:41
+*** DONE Remove Stack stuff
+    CLOCK: [2013-04-27 Sat 18:17]--[2013-04-27 Sat 18:35] =>  0:18
+*** DONE addEdge => addTask
+    CLOCK: [2013-04-27 Sat 18:35]--[2013-04-27 Sat 18:40] =>  0:05
 ** Thread pool
 ** Make Fib.java look like a complete MiniJava program

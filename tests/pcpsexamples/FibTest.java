@@ -42,10 +42,10 @@ public class FibTest{
             };
         now.continuation = current;
 
-        fib.scheduler.schedule(now);
-        fib.scheduler.schedule(later);
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
 
-        fib.scheduler.addEdge(now, later);
+        fib.scheduler.happensBefore(now, later);
         
         fib.scheduler.tryRunTask();
         assertEquals(1, now.tempResult);
@@ -64,10 +64,10 @@ public class FibTest{
             };
         now.continuation = current;
 
-        fib.scheduler.schedule(now);
-        fib.scheduler.schedule(later);
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
 
-        fib.scheduler.addEdge(now, later);
+        fib.scheduler.happensBefore(now, later);
         fib.scheduler.tryRunTask();
         assertEquals(1, now.tempResult);
     }
@@ -85,10 +85,10 @@ public class FibTest{
             };
         now.continuation = current;
 
-        fib.scheduler.schedule(now);
-        fib.scheduler.schedule(later);
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
 
-        fib.scheduler.addEdge(now, later);
+        fib.scheduler.happensBefore(now, later);
 
         fib.scheduler.tryRunTask();
         assertEquals(2, now.tempResult);
@@ -107,10 +107,10 @@ public class FibTest{
             };
         now.continuation = current;
 
-        fib.scheduler.schedule(now);
-        fib.scheduler.schedule(later);
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
 
-        fib.scheduler.addEdge(now, later);
+        fib.scheduler.happensBefore(now, later);
 
         fib.scheduler.tryRunTask();
         assertEquals(13, now.tempResult);
