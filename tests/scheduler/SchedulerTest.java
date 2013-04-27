@@ -24,9 +24,9 @@ public class SchedulerTest{
     
     @Test
     public final void testVertexSet_ReflectsChanges(){
-        Activation activation1 = new Activation(1);
-        Activation activation2 = new Activation(2);
-        Activation activation3 = new Activation(3);
+        Activation activation1 = new Activation(1, scheduler);
+        Activation activation2 = new Activation(2, scheduler);
+        Activation activation3 = new Activation(3, scheduler);
         Set vertexSet = scheduler.taskGraph.vertexSet();
 
         assertTrue(vertexSet.isEmpty()); 

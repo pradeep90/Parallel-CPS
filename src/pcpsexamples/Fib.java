@@ -17,9 +17,9 @@ public class Fib {
             now.tempResult = 1;
         } else {
             //make left and right available inside closure
-            Activation left = new Activation();
-            Activation right = new Activation();
-            Activation sum = new Activation();
+            Activation left = new Activation(scheduler);
+            Activation right = new Activation(scheduler);
+            Activation sum = new Activation(scheduler);
             Activation then = now;
   
             left.continuation = new ContinuationLeft(k, this, left, sum);
@@ -57,13 +57,13 @@ class ContinuationLeft extends AbstractContinuation {
     public ContinuationLeft(int k, Fib object,
                             Activation now, Activation later){
         super(now, later);
-        name = "Left";
+        name = "Left k: " + k + " k-1: " + (k - 1);
         this.k = k;
         this.object = object;
     }
         
     @Override
-    public void call(){
+    public void run(){
         object.fib(k - 1, now, later);
     }
 }
@@ -74,13 +74,13 @@ class ContinuationRight extends AbstractContinuation {
     
     public ContinuationRight(int k, Fib object, Activation now, Activation later){
         super(now, later);
-        name = "Right";
+        name = "Right k: " + k + " k-2: " + (k - 2);
         this.k = k;
         this.object = object;
     }
         
     @Override
-    public void call(){
+    public void run(){
         object.fib(k - 2, now, later);
     }
 }
@@ -100,7 +100,7 @@ class ContinuationSum extends AbstractContinuation {
     }
         
     @Override
-    public void call(){
+    public void run(){
         //sum ’returns’ for fib()
         then.tempResult = ((int)left.tempResult)
                 + ((int)right.tempResult);

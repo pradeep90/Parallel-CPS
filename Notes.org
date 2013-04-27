@@ -304,6 +304,7 @@
 #+end_src
 *** Basically, some sort of code-rewriting mechanism. A DSL is in order here, methinks.
 ** Try to use preconditions
+** Check out newCachedThreadPool later
 * Actions
 ** Think about design
    CLOCK: [2013-04-24 Wed 12:20]--[2013-04-24 Wed 18:20] =>  6:00
@@ -376,4 +377,23 @@
 *** DONE addEdge => addTask
     CLOCK: [2013-04-27 Sat 18:35]--[2013-04-27 Sat 18:40] =>  0:05
 ** Thread pool
+   CLOCK: [2013-04-27 Sat 18:40]--[2013-04-27 Sat 18:59] =>  0:19
+*** DONE Make Continuations implement Runnable
+    CLOCK: [2013-04-27 Sat 18:59]--[2013-04-27 Sat 19:05] =>  0:06
+*** DONE Printlining for Activation
+    CLOCK: [2013-04-27 Sat 19:05]--[2013-04-27 Sat 19:35] =>  0:30
+*** DONE think about thread stuff and contracts
+    CLOCK: [2013-04-27 Sat 19:35]--[2013-04-27 Sat 21:30] =>  1:55
+*** DONE try assert
+    CLOCK: [2013-04-27 Sat 22:56]--[2013-04-27 Sat 23:18] =>  0:22
+*** DONE put assert for areTasksRemaining, etc.
+    CLOCK: [2013-04-27 Sat 23:18]--[2013-04-27 Sat 23:26] =>  0:08
+*** Use ThreadPool
+    CLOCK: [2013-04-27 Sat 23:30]--[2013-04-28 Sun 02:06] =>  2:36
+**** First of all, I think there are nodes left over when I terminate.
+**** That's why I think LastActivation may cause an Assertion error and cup (in its own thread, thereby not notifying Scheduler or my console), leaving Scheduler in an infinite loop
+***** It gives me proper assertion error when I remove the assertion in signalLastTaskDone()
+**** ULTIMATE HUGE BUG: Scheduler should remove the current task only AFTER it has finished running NOT immediately after it has been scheduled.
+     CLOCK: [2013-04-28 Sun 02:06]--[2013-04-28 Sun 02:27] =>  0:21
+*** TODO Make proper hashCode and equals for Activation, etc.
 ** Make Fib.java look like a complete MiniJava program

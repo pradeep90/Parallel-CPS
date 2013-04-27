@@ -1,16 +1,20 @@
 package scheduler;
 
-public class Activation {
+import java.lang.Runnable;
+
+public class Activation implements Runnable {
     public Continuation continuation;
     public Result result;
+    public Scheduler scheduler;
     public int tempResult;
 
-    public Activation() {
-        this.tempResult = 0;
+    public Activation(Scheduler scheduler) {
+        this(0, scheduler);
     }
 
-    public Activation(int result) {
+    public Activation(int result, Scheduler scheduler) {
         this.tempResult = result;
+        this.scheduler = scheduler;
     }
     
     // public Activation(Continuation continuation, Result result) {
@@ -23,13 +27,12 @@ public class Activation {
     //     this.tempResult = result;
     // }
 
+    @Override
     public void run(){
-        if (continuation == null){
-            // System.out.println("Empty Continuation"); 
-            return;
+        if (continuation != null){
+            continuation.run();
         }
-
-        continuation.call();
+        scheduler.signalTaskDone(this);
     }
 
     public String toString(){

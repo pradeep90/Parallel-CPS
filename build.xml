@@ -15,7 +15,8 @@
   <property name="junit-jar.dir" value="${junit-home.dir}/junit4-4.8.2.jar"/>
   <property name="hamcrest-jar.dir" value="${junit-home.dir}/hamcrest-core-1.1.jar"/>
   <property name="test.pattern" value="**/*Test*.java"/>
-  <property name="report.tests" value="raw-test-reports"/>
+  <property name="report.raw" value="raw-test-reports"/>
+  <property name="report.final" value="unit-tests-reports"/>
   <property name="jtb-home" location="${user.home}/Downloads/Applications/jtb132.jar"/>
   <property name="javacc-home"
 	    location="${user.home}/Downloads/Applications/javacc-5.0/bin/javacc"/>
@@ -47,6 +48,8 @@
   <target name="makedir">
     <mkdir dir="${classes.dir}" />
     <mkdir dir="${tests-classes.dir}" />
+    <!-- <mkdir dir="${report.final}" /> -->
+    <!-- <mkdir dir="${report.raw}" /> -->
   </target>
 
   <target name="jtb-stuff">
@@ -94,8 +97,11 @@
       <!-- For outputting reports on each Test class -->
       <formatter type="brief" usefile="false"/>
 
-      <!-- <batchtest fork="yes" todir="${report.tests}"> -->
-      <batchtest fork="yes" todir="tmp/rawtestoutput">
+      <assertions>
+	<enable/>
+      </assertions>
+
+      <batchtest fork="yes" todir="${report.raw}">
 	<fileset dir="${tests-src.dir}">
           <include name="${test.pattern}"/>
           <exclude name="**/AllTests.java"/>
@@ -107,7 +113,7 @@
     <!-- To generate an HTML report -->
     <!-- <junitreport todir="tmp"> -->
     <!--   <fileset dir="tmp/rawtestoutput"/> -->
-    <!--   <report todir="unit-tests-reports/"/> -->
+    <!--   <report todir="${report.final}"/> -->
     <!-- </junitreport> -->
 
     <fail if="junit.failure" message="Unit test(s) failed.  See reports!"/>
