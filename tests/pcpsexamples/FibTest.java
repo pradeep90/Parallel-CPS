@@ -106,6 +106,9 @@ public class FibTest{
     @Test
     public final void testFib_RecursiveCase2(){
         System.out.println("testFib_RecursiveCase2"); 
+
+        // long lStartTime = System.currentTimeMillis();
+
         Continuation current = new AbstractContinuation(now, later){
                 @Override
                 public void run(){
@@ -120,6 +123,13 @@ public class FibTest{
         fib.scheduler.happensBefore(now, later);
 
         fib.scheduler.tryRunTasks();
+
+        // long lEndTime = System.currentTimeMillis();
+   
+        // long difference = lEndTime - lStartTime;
+   
+        // System.out.println("Elapsed milliseconds: " + difference);
+
         assertEquals(13, now.tempResult);
     }
 }

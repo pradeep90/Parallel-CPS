@@ -4,7 +4,12 @@ import java.util.*;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.ListenableDirectedGraph;
+import org.jgrapht.alg.DirectedNeighborIndex;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -14,35 +19,74 @@ import java.util.concurrent.Executors;
  * Class for scheduling tasks obeying the happensBefore constraints
  * between them.
  *
+ * TODO: This is wrong now
  * @classinvariant !taskGraph.vertexSet().isEmpty() => getReadyNode() != null
  *
  * This is because there are our schedule is always a DAG - no
  * circular dependences.
+ *
+ * ASSUMPTION: Initially, there is only one ready node (i.e., the
+ * first activation)
+ *
+ * Ready node: Unscheduled zero-degree node
  */
 public class Scheduler {
     // @invariant will not be null
-    public DirectedGraph<Activation, DefaultEdge> taskGraph;
+    public ListenableDirectedGraph<Activation, DefaultEdge> taskGraph;
+    public DirectedNeighborIndex<Activation, DefaultEdge> neighbourIndex;
 
+    ConcurrentSkipListSet<Activation> readyNodes;
+    
+    private final Object lock = new Object();
+    
     public ExecutorService executor;
 
     private boolean lastTaskDone;
+
+    /**
+     * numReadyNodes may be incremented by concurrent threads (as
+     * happensBefore edges are removed), but it is decremented only by
+     * this scheduler, i.e., it can't happen concurrently.
+     * So, numReadyNodes > 0 => ready node is available.
+     */
+    private AtomicInteger numReadyNodes;
+    
+    private int numActiveTasks = 0;
     private static final int NUM_THREADS = 10;
     
     public Scheduler() {
-        taskGraph = new DefaultDirectedGraph<Activation, DefaultEdge>(
+        taskGraph = new ListenableDirectedGraph<Activation, DefaultEdge>(
             DefaultEdge.class);
+
+        neighbourIndex = new ReadyNodeListener(taskGraph, this);
+        taskGraph.addGraphListener(neighbourIndex);
+
+        readyNodes = new ConcurrentSkipListSet<Activation>();
+        
+        // Initially, NOW Activation is ready
+        numReadyNodes = new AtomicInteger(1);
+        
         executor = Executors.newFixedThreadPool(NUM_THREADS);
         lastTaskDone = false;
     }
 
     public void addTask(Activation activation){
+        // synchronized (lock){
         taskGraph.addVertex(activation);
+        // }
     }
 
     public void happensBefore(Activation from, Activation to){
+        // synchronized (lock){
         taskGraph.addEdge(from, to);
-
         assert taskGraph.containsEdge(from, to): "Must contain the edge";
+        // }
+    }
+
+    public void signalSomeNodeIsReady(Activation givenReadyNode){
+        numReadyNodes.incrementAndGet();
+        readyNodes.add(givenReadyNode);
+        System.out.println("signalSomeNodeIsReady: numReadyNodes.get(): " + numReadyNodes.get());
     }
 
     /** 
@@ -54,9 +98,14 @@ public class Scheduler {
      * finishedTask (may contain others equal to finishedTask)
      */
     public void signalTaskDone(Activation finishedTask){
-        boolean returnValue = taskGraph.removeVertex(finishedTask);
+        boolean returnValue;
+        // synchronized (lock){
+        returnValue = taskGraph.removeVertex(finishedTask);
+        // }
         assert returnValue == true: "finishedTask must have been in taskGraph";
         System.out.println("signalTaskDone: " + finishedTask); 
+
+        numActiveTasks--;
     }
 
     /** 
@@ -81,42 +130,74 @@ public class Scheduler {
     }
 
     /** 
-     * Wait till a node becomes ready or till the last task is done.
+     * Wait till a ready node is available or till the last task is
+     * done.
      *
-     * @precondition Either there is already a zero-degree node ready
-     * or there is a running task.
+     * @precondition either there is ALREADY a ready node or there is
+     * a running task or all tasks are over.
      *
-     * A running task will either produce new tasks (one of which will
-     * have degree zero) or it will be the last task.
+     * If there is no pre-existing ready node, the running task would
+     * either be the last one or would create subtasks eventually (in
+     * that case, wait).
      *
-     * @postcondition ready node is available or all tasks have
+     * @postcondition ready node is now available or all tasks have
      * finished.
      */
     public void tryWaitForReadyNode(){
-        Set<Activation> nodes = taskGraph.vertexSet();
-        System.out.println("Last seen here - tryWaitForReadyNode"); 
-        System.out.println("taskGraph: " + taskGraph);
-        System.out.println("nodes.isEmpty(): " + nodes.isEmpty());
-        System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
-        while (nodes.isEmpty() && !isLastTaskDone());
+        // Set<Activation> nodes;
+        // // synchronized (lock){
+        // nodes = taskGraph.vertexSet();
+        // System.out.println("tryWaitForReadyNode: Last seen here"); 
+        // System.out.println("taskGraph: " + taskGraph);
+        // // }
+        // System.out.println("nodes.isEmpty(): " + nodes.isEmpty());
+        // System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
+
+        // TODO: In the future, do a non-blocking wait or something
+        while (numReadyNodes.get() == 0 && !isLastTaskDone()){
+            // try {
+            // Thread.sleep(1000);
+
+            System.out.println("tryWaitForReadyNode: still in loop"); 
+            System.out.println("tryWaitForReadyNode: numReadyNodes.get(): "
+                               + numReadyNodes.get());
+            System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
+
+            // } catch (InterruptedException ie) {
+            //     //Handle exception
+                    // }
+        }
         System.out.println("out of tryWaitForReadyNode"); 
     }
 
     /**
-     * @precondition there exists at least one ready node in taskGraph
+     * @precondition there exists at least one ready node
      * 
-     * @return a zero-degree vertex
+     * @return a ready node
+     * 
      */
     public Activation getReadyNode(){
+        Activation result;
+        // synchronized (lock){
+        assert numReadyNodes.get() > 0: "must be at least one ready node";
+        
+        // TODO: remove this later
         assert !taskGraph.vertexSet().isEmpty(): "Vertex set can't be empty";
 
-        Activation result = null;
+        // TODO: Maybe use ReadyNodeListener's DirectedNeighborIndex
+        // to check the degree, etc.
+        result = null;
         for (Activation currActivation : taskGraph.vertexSet()){
-            if (taskGraph.inDegreeOf(currActivation) == 0){
+            if (!currActivation.isScheduled()
+                && taskGraph.inDegreeOf(currActivation) == 0){
+
                 result = currActivation;
                 break;
             }
         }
+        // }
+
+        assert result != null: "ready node must exist";
         return result;
     }
 
@@ -138,20 +219,29 @@ public class Scheduler {
     }
 
     /** 
-     * Run a zero-degree node from taskGraph.
+     * Run a ready node from taskGraph.
      *
-     * @precondition there should be at least one zero-degree vertex
+     * @precondition there should be at least one ready node
      * 
-     * @postcondition a ready task would have been scheduled to run;
-     * It would be removed from the graph.
+     * @postcondition a ready task would have been scheduled to run
      */
     public void runReadyTask(){
+        System.out.println("readyNodes: " + readyNodes);
         Activation task = getReadyNode();
-        System.out.println("taskGraph: " + taskGraph);
-        System.out.println("task: " + task);
+        // System.out.println("taskGraph: " + taskGraph);
+        System.out.println("runReadyTask: task: " + task);
+
+        task.setIsScheduled();
+        readyNodes.remove(task);
+        numReadyNodes.decrementAndGet();
+        System.out.println("runReadyTask: numReadyNodes.get(): " + numReadyNodes.get());
+
+        numActiveTasks++;
+        System.out.println("numActiveTasks: " + numActiveTasks);
+
+        // TODO: 
         // executor.submit(task);
         task.run();
-        // taskGraph.removeVertex(task);
     }
 
     /** 
@@ -171,16 +261,18 @@ public class Scheduler {
                 break;
             }
 
-            System.out.println("ready node received"); 
+            System.out.println("tryRunTasks: ready node received"); 
             runReadyTask();
-            System.out.println("task completed"); 
+            System.out.println("tryRunTasks: task scheduled"); 
         }
+        // TODO: Maybe put this in a finally block
         executor.shutdownNow();
     }
 
     public String toString(){
         String result = "<Scheduler: ";
-        result += taskGraph;
+        result += "Not printing the taskGraph for concurrency reasons";
+        // result += taskGraph;
         result += ">";
         return result;
     }

@@ -41,4 +41,29 @@ public class SchedulerTest{
         scheduler.taskGraph.removeVertex(activation3);
         assertEquals(vertexSet.size(), 2); 
     }
+
+    @Test
+    public final void testDirectedNeighborIndex_ReflectsChanges(){
+        Activation activation1 = new Activation(1, scheduler);
+        Activation activation2 = new Activation(2, scheduler);
+        Activation activation3 = new Activation(3, scheduler);
+        Set vertexSet = scheduler.taskGraph.vertexSet();
+
+        scheduler.taskGraph.addVertex(activation1);
+        scheduler.taskGraph.addVertex(activation2);
+        scheduler.taskGraph.addVertex(activation3);
+
+        assertTrue(scheduler.neighbourIndex.predecessorListOf(activation1)
+                   .isEmpty()); 
+
+        scheduler.taskGraph.addEdge(activation1, activation2);
+
+        assertEquals(
+            1,
+            scheduler.neighbourIndex.predecessorListOf(activation2).size());
+        
+        scheduler.taskGraph.removeVertex(activation1);
+        assertTrue(scheduler.neighbourIndex.predecessorListOf(activation2)
+                   .isEmpty()); 
+    }
 }

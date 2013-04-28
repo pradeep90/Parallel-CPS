@@ -305,6 +305,7 @@
 *** Basically, some sort of code-rewriting mechanism. A DSL is in order here, methinks.
 ** Try to use preconditions
 ** Check out newCachedThreadPool later
+** ULTIMATE Remember that if the other thread fails (cos of some exception or whatever), you will not come to know of it. Infinite loop could occur.
 * Actions
 ** Think about design
    CLOCK: [2013-04-24 Wed 12:20]--[2013-04-24 Wed 18:20] =>  6:00
@@ -369,7 +370,7 @@
 *** But then, you see that later is ready and so you run it too... calamity
 *** so, you must remove the edge only AFTER now has finished running
 *** Plus, if you remove it eagerly, its subtasks will face a "vertex does not exist" error when trying to add an edge
-** Scheduler
+** DONE Scheduler
 *** DONE Changing the Graph changes the set returned by vertexSet()
     CLOCK: [2013-04-27 Sat 16:36]--[2013-04-27 Sat 18:17] =>  1:41
 *** DONE Remove Stack stuff
@@ -388,12 +389,89 @@
     CLOCK: [2013-04-27 Sat 22:56]--[2013-04-27 Sat 23:18] =>  0:22
 *** DONE put assert for areTasksRemaining, etc.
     CLOCK: [2013-04-27 Sat 23:18]--[2013-04-27 Sat 23:26] =>  0:08
-*** Use ThreadPool
+*** DONE Use ThreadPool
     CLOCK: [2013-04-27 Sat 23:30]--[2013-04-28 Sun 02:06] =>  2:36
 **** First of all, I think there are nodes left over when I terminate.
 **** That's why I think LastActivation may cause an Assertion error and cup (in its own thread, thereby not notifying Scheduler or my console), leaving Scheduler in an infinite loop
 ***** It gives me proper assertion error when I remove the assertion in signalLastTaskDone()
-**** ULTIMATE HUGE BUG: Scheduler should remove the current task only AFTER it has finished running NOT immediately after it has been scheduled.
-     CLOCK: [2013-04-28 Sun 02:06]--[2013-04-28 Sun 02:27] =>  0:21
-*** TODO Make proper hashCode and equals for Activation, etc.
+*** DONE HUGE BUG: Scheduler should remove the current task only AFTER it has finished running NOT immediately after it has been scheduled.
+    CLOCK: [2013-04-28 Sun 02:06]--[2013-04-28 Sun 02:27] =>  0:21
+**** What do I do? (Concurrent Modification Error)
+     CLOCK: [2013-04-28 Sun 02:27]--[2013-04-28 Sun 03:12] =>  0:45
+***** I guess everybody will be accessing and modifying taskGraph.
+***** Can I avoid it? If so, how?
+*** Options regarding ConcurrentModificationException
+**** Explicit lock
+***** Might cause unnecessary slowdown
+***** How is that unnecessary? You have to serialize this somehow. Unavoidable.
+**** Make each Activation accumulate its changes (tasks and schedule) and commit it only at the end
+***** May be costly if there are a LOT of subtasks
+***** But then, my code generation would put all the happen-before calls at the end of the method anyway.
+****** Or would it? :P
+**** Make all methods accessing taskGraph =synchronized=
+**** TODO Check out performance tradeoffs later.
+**** Right now, go for a simple Lock on taskGraph - Not working out. Am gonna go through all the methods to check where the concurrent modification is happening
+     CLOCK: [2013-04-28 Sun 21:30]--[2013-04-28 Sun 21:40] =>  0:10
+***** Looking to Jon Skeet for reference
+      http://stackoverflow.com/questions/5861894/how-to-synchonize-or-lock-variables-on-java#answer-5861918
+*** DONE Recheck contracts for all methods
+    CLOCK: [2013-04-28 Sun 21:40]--[2013-04-28 Sun 22:00] =>  0:20
+**** What's happening in parallel?
+***** Continuations will do addTask and happensBefore concurrently
+***** Activations will do signalLastTaskDone concurrently
+***** Scheduler will traverse the vertexSet in getReadyNode
+****** However, this needn't be a problem.
+****** We could do ensure that there is at least one node in vertexSet and simply iterate over the common vertexSet member variable
+**** TODO Perhaps have a member variable for vertexSet
+**** TODO See if left -> right -> sum works concurrently
+     CLOCK: [2013-04-28 Sun 22:00]--[2013-04-28 Sun 22:13] =>  0:13
+*** DONE Basic problem:
+**** While the current task is running, getReadyNode may again find it to be "ready" and return it
+***** => the same task may get scheduled any number of times before its first instance calls signalTaskDone
+**** OUTDATED => possible infinite sequence of tasks
+**** DONE Wrong. Not infinite. It's just that there would be additional tasks created, but the original sequence of tasks will still complete as per schedule
+***** The data agrees
+***** By the time the first Left was run, <BaseContinuation> had run 22-23 times
+***** At that time, there were approx 22-23 nodes for Left, Right, and Sum.
+***** And no <BaseContinuation>
+**** DONE Solution: Add a =isScheduled= field to Activation
+     CLOCK: [2013-04-28 Sun 22:13]--[2013-04-28 Sun 22:23] =>  0:10
+***** This should ideally be part of the Graph, but no option as of now
+***** Seems to solve the problem of lots of spurious task being scheduling
+*** DONE Test linear schedule.
+    CLOCK: [2013-04-29 Mon 00:53]--[2013-04-29 Mon 00:55] =>  0:02
+    CLOCK: [2013-04-28 Sun 22:26]--[2013-04-28 Sun 23:10] =>  0:44
+**** getReadyNode returns null sometimes
+***** Have a listener on the graph
+      CLOCK: [2013-04-28 Sun 23:10]--[2013-04-28 Sun 23:39] =>  0:29
+****** ListenableDirectedGraph
+***** When an edge is removed, check if the destination node's degree becomes zero.
+      CLOCK: [2013-04-28 Sun 23:41]--[2013-04-28 Sun 23:58] =>  0:17
+****** The data suggests that edgeRemoved is called after the source is removed (cos predecessorListOf(target) is empty)
+***** VVIP If so, then it is an unscheduled ready node
+***** unscheduled cos it had an in-edge so far
+***** So, just increment an atomic counter (#unscheduled ready nodes) in Scheduler
+***** TODO So, then tryWaitForReadyNode can just spin on atomic counter till it becomes > 0 (or until lastTaskDone)
+****** ideally, it should wait on the atomic counter, but whatever 
+**** ConcurrentModificationException for one method (cos I removed all the synchronized blocks)
+*** Test with non-linear schedule 
+    CLOCK: [2013-04-29 Mon 00:55]--[2013-04-29 Mon 01:17] =>  0:22
+    CLOCK: [2013-04-28 Sun 22:24]--[2013-04-28 Sun 22:26] =>  0:02
+**** VVIP I think the ConcurrentModificationException happens when I try to print taskGraph (might be cos you need to ITERATE OVER THE NODES in toString())
+**** VVIP It also happens when I iterate over taskGraph.vertexSet() in getReadyNode
+*** TODO Test without the assert - works sometimes
+    CLOCK: [2013-04-29 Mon 01:17]--[2013-04-29 Mon 01:27] =>  0:10
+*** TODO Why not have a set of ready nodes?
+    CLOCK: [2013-04-29 Mon 01:27]--[2013-04-29 Mon 01:55] =>  0:28
+**** ConcurrentSkipListMap
+**** DONE Bug: cos Activation didn't implement Comparable, it gave a ClassCastException, but it was in the other thread and it failed -> deadlock
+*** DONE Ensure that contracts for methods hold after adding the isScheduled field and after ReadyNodeListener
+    CLOCK: [2013-04-29 Mon 00:38]--[2013-04-29 Mon 00:53] =>  0:15
+    CLOCK: [2013-04-29 Mon 00:22]--[2013-04-29 Mon 00:38] =>  0:16
+** TODO Make proper hashCode and equals for Activation, etc.
 ** Make Fib.java look like a complete MiniJava program
+** TODO Decouple the Task graph from the Scheduler. Make the Scheduler access the graph just like any other Activation.
+** TODO See if numActiveTasks is accurate. Else, remove.
+
+
+
