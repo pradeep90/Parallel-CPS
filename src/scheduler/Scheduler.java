@@ -22,8 +22,8 @@ import java.util.concurrent.Executors;
  * TODO: This is wrong now
  * @classinvariant !taskGraph.vertexSet().isEmpty() => getReadyNode() != null
  *
- * This is because there are our schedule is always a DAG - no
- * circular dependences.
+ * This is because our schedule is always a DAG - no circular
+ * dependences.
  *
  * ASSUMPTION: Initially, there is only one ready node (i.e., the
  * first activation)
@@ -37,12 +37,13 @@ public class Scheduler {
 
     ConcurrentSkipListSet<Activation> readyNodes;
     
-    private final Object lock = new Object();
+    public final Object lock = new Object();
     
     public ExecutorService executor;
 
     private boolean lastTaskDone;
-
+    public static final boolean DEBUG_ON = false;
+    
     /**
      * numReadyNodes may be incremented by concurrent threads (as
      * happensBefore edges are removed), but it is decremented only by
@@ -71,22 +72,28 @@ public class Scheduler {
     }
 
     public void addTask(Activation activation){
-        // synchronized (lock){
-        taskGraph.addVertex(activation);
-        // }
+        synchronized (lock){
+            taskGraph.addVertex(activation);
+        }
     }
 
     public void happensBefore(Activation from, Activation to){
-        // synchronized (lock){
-        taskGraph.addEdge(from, to);
-        assert taskGraph.containsEdge(from, to): "Must contain the edge";
+        // if (DEBUG_ON){
+        //     System.out.println("from: " + from);
+        //     System.out.println("to: " + to);
         // }
+        synchronized (lock){
+            taskGraph.addEdge(from, to);
+            assert taskGraph.containsEdge(from, to): "Must contain the edge";
+        }
     }
 
     public void signalSomeNodeIsReady(Activation givenReadyNode){
         numReadyNodes.incrementAndGet();
         readyNodes.add(givenReadyNode);
-        System.out.println("signalSomeNodeIsReady: numReadyNodes.get(): " + numReadyNodes.get());
+        if (DEBUG_ON){
+            System.out.println("signalSomeNodeIsReady: numReadyNodes.get(): " + numReadyNodes.get());
+        }
     }
 
     /** 
@@ -99,11 +106,15 @@ public class Scheduler {
      */
     public void signalTaskDone(Activation finishedTask){
         boolean returnValue;
-        // synchronized (lock){
-        returnValue = taskGraph.removeVertex(finishedTask);
-        // }
+        synchronized (lock){
+            returnValue = taskGraph.removeVertex(finishedTask);
+        }
+
         assert returnValue == true: "finishedTask must have been in taskGraph";
-        System.out.println("signalTaskDone: " + finishedTask); 
+
+        if (DEBUG_ON){
+            System.out.println("signalTaskDone: " + finishedTask); 
+        }
 
         numActiveTasks--;
     }
@@ -117,15 +128,20 @@ public class Scheduler {
      */
     public void signalLastTaskDone(){
         Set<Activation> nodes = taskGraph.vertexSet();
-        System.out.println("nodes: " + nodes);
+        if (DEBUG_ON){
+            System.out.println("nodes: " + nodes);
+        }
 
         // TODO: I believe this gives an error in the LastActivation
         // thread but it doesn't print anything on the console
+
         assert nodes.isEmpty(): "No tasks must remain";
 
-        System.out.println("signalLastTaskDone: assert over"); 
+        if (DEBUG_ON){
+            System.out.println("signalLastTaskDone: assert over"); 
+            System.out.println("signalAllTasksDone"); 
+        }
 
-        System.out.println("signalAllTasksDone"); 
         lastTaskDone = true;
     }
 
@@ -158,16 +174,22 @@ public class Scheduler {
             // try {
             // Thread.sleep(1000);
 
-            System.out.println("tryWaitForReadyNode: still in loop"); 
-            System.out.println("tryWaitForReadyNode: numReadyNodes.get(): "
-                               + numReadyNodes.get());
-            System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
+            // TODO: turn the printlining on
+
+            if (DEBUG_ON){
+                // System.out.println("tryWaitForReadyNode: still in loop"); 
+                // System.out.println("tryWaitForReadyNode: numReadyNodes.get(): "
+                //                    + numReadyNodes.get());
+                // System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
+            }
 
             // } catch (InterruptedException ie) {
             //     //Handle exception
-                    // }
+            // }
         }
-        System.out.println("out of tryWaitForReadyNode"); 
+        if (DEBUG_ON){
+            System.out.println("out of tryWaitForReadyNode"); 
+        }
     }
 
     /**
@@ -178,24 +200,24 @@ public class Scheduler {
      */
     public Activation getReadyNode(){
         Activation result;
-        // synchronized (lock){
-        assert numReadyNodes.get() > 0: "must be at least one ready node";
+        synchronized (lock){
+            assert numReadyNodes.get() > 0: "must be at least one ready node";
         
-        // TODO: remove this later
-        assert !taskGraph.vertexSet().isEmpty(): "Vertex set can't be empty";
+            // TODO: remove this later
+            assert !taskGraph.vertexSet().isEmpty(): "Vertex set can't be empty";
 
-        // TODO: Maybe use ReadyNodeListener's DirectedNeighborIndex
-        // to check the degree, etc.
-        result = null;
-        for (Activation currActivation : taskGraph.vertexSet()){
-            if (!currActivation.isScheduled()
-                && taskGraph.inDegreeOf(currActivation) == 0){
+            // TODO: Maybe use ReadyNodeListener's DirectedNeighborIndex
+            // to check the degree, etc.
+            result = null;
+            for (Activation currActivation : taskGraph.vertexSet()){
+                if (!currActivation.isScheduled()
+                    && taskGraph.inDegreeOf(currActivation) == 0){
 
-                result = currActivation;
-                break;
+                    result = currActivation;
+                    break;
+                }
             }
         }
-        // }
 
         assert result != null: "ready node must exist";
         return result;
@@ -226,22 +248,28 @@ public class Scheduler {
      * @postcondition a ready task would have been scheduled to run
      */
     public void runReadyTask(){
-        System.out.println("readyNodes: " + readyNodes);
+        if (DEBUG_ON){
+            // System.out.println("readyNodes: " + readyNodes);
+        }
+
         Activation task = getReadyNode();
         // System.out.println("taskGraph: " + taskGraph);
-        System.out.println("runReadyTask: task: " + task);
+
 
         task.setIsScheduled();
         readyNodes.remove(task);
         numReadyNodes.decrementAndGet();
-        System.out.println("runReadyTask: numReadyNodes.get(): " + numReadyNodes.get());
-
         numActiveTasks++;
-        System.out.println("numActiveTasks: " + numActiveTasks);
+
+        if (DEBUG_ON){
+            System.out.println("runReadyTask: task: " + task);
+            System.out.println("runReadyTask: numReadyNodes.get(): " + numReadyNodes.get());
+            System.out.println("numActiveTasks: " + numActiveTasks);
+        }
 
         // TODO: 
-        // executor.submit(task);
-        task.run();
+        executor.submit(task);
+        // task.run();
     }
 
     /** 
@@ -251,7 +279,9 @@ public class Scheduler {
      * circular happensBefore dependences in the schedule.
      */
     public void tryRunTasks(){
-        System.out.println("hello"); 
+        if (DEBUG_ON){
+            System.out.println("hello"); 
+        }
 
         // Exit loop when last activation has finished
         while (!isLastTaskDone()){
@@ -261,9 +291,15 @@ public class Scheduler {
                 break;
             }
 
-            System.out.println("tryRunTasks: ready node received"); 
+            if (DEBUG_ON){
+                System.out.println("tryRunTasks: ready node received"); 
+            }
+
             runReadyTask();
-            System.out.println("tryRunTasks: task scheduled"); 
+
+            if (DEBUG_ON){
+                System.out.println("tryRunTasks: task scheduled"); 
+            }
         }
         // TODO: Maybe put this in a finally block
         executor.shutdownNow();

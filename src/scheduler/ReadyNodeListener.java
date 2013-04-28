@@ -21,12 +21,14 @@ public class ReadyNodeListener
      * If the destination node's degree becomes zero, notify scheduler.
      */
     @Override
-    public void edgeRemoved(GraphEdgeChangeEvent<Activation, DefaultEdge> e){
+        public void edgeRemoved(GraphEdgeChangeEvent<Activation, DefaultEdge> e){
         super.edgeRemoved(e);
         Activation target = this.graph.getEdgeTarget(e.getEdge());
         if (this.predecessorListOf(target).isEmpty()){
-            System.out.println("edgeRemoved: Zero degree ready node"); 
-            System.out.println("target: " + target);
+            if (scheduler.DEBUG_ON){
+                System.out.println("edgeRemoved: Zero degree ready node"); 
+                System.out.println("target: " + target);
+            }
             scheduler.signalSomeNodeIsReady(target);
         }
     }

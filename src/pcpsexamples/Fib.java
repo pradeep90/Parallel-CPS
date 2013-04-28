@@ -7,6 +7,8 @@ import scheduler.Scheduler;
 
 public class Fib {
     public Scheduler scheduler;
+
+    private static final boolean NON_LINEAR_SCHEDULE = true;
     
     public Fib() {
         scheduler = new Scheduler();
@@ -22,22 +24,30 @@ public class Fib {
             Activation sum = new Activation(scheduler);
             Activation then = now;
   
-            left.continuation = new ContinuationLeft(k, this, left, sum);
+            if (NON_LINEAR_SCHEDULE){
+                left.continuation = new ContinuationLeft(k, this, left, sum);
+            } else {
+                left.continuation = new ContinuationLeft(k, this, left, right);
+            }
             right.continuation = new ContinuationRight(k, this, right, sum);
             sum.continuation = new ContinuationSum(then, left, right, sum, later);
           
-            // TODO: For now, cos I'm using a Stack, schedule them in
-            // reverse order
-            scheduler.addTask(left);
-            scheduler.addTask(right);
-            scheduler.addTask(sum);
+            synchronized (scheduler.lock){
+                scheduler.addTask(left);
+                scheduler.addTask(right);
+                scheduler.addTask(sum);
 
-            scheduler.happensBefore(now, left);
-            scheduler.happensBefore(now, right);
-            scheduler.happensBefore(now, sum);
-            scheduler.happensBefore(left, sum);
-            scheduler.happensBefore(right, sum);
-            scheduler.happensBefore(sum, later);
+                scheduler.happensBefore(now, left);
+                scheduler.happensBefore(now, right);
+                scheduler.happensBefore(now, sum);
+                if (NON_LINEAR_SCHEDULE){
+                    scheduler.happensBefore(left, sum);
+                } else {
+                    scheduler.happensBefore(left, right);
+                }
+                scheduler.happensBefore(right, sum);
+                scheduler.happensBefore(sum, later);
+            }
             
             // left→right; //inserted by naive translation
             // right→sum;

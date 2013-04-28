@@ -45,11 +45,20 @@ public class Activation implements Runnable, Comparable<Activation> {
     // }
 
     @Override
-    public void run(){
+        public void run(){
         if (continuation != null){
-            System.out.println("Activation: run()"); 
-            continuation.run();
-            System.out.println("Activation: completed run()"); 
+            if (scheduler.DEBUG_ON){
+                System.out.println("Activation: run()"); 
+            }
+            try {
+                continuation.run();
+            } catch(RuntimeException e) {
+                e.printStackTrace();
+            }
+
+            if (scheduler.DEBUG_ON){
+                System.out.println("Activation: completed run()"); 
+            }
         }
         scheduler.signalTaskDone(this);
     }

@@ -377,7 +377,7 @@
     CLOCK: [2013-04-27 Sat 18:17]--[2013-04-27 Sat 18:35] =>  0:18
 *** DONE addEdge => addTask
     CLOCK: [2013-04-27 Sat 18:35]--[2013-04-27 Sat 18:40] =>  0:05
-** Thread pool
+** DONE Thread pool
    CLOCK: [2013-04-27 Sat 18:40]--[2013-04-27 Sat 18:59] =>  0:19
 *** DONE Make Continuations implement Runnable
     CLOCK: [2013-04-27 Sat 18:59]--[2013-04-27 Sat 19:05] =>  0:06
@@ -454,24 +454,49 @@
 ***** TODO So, then tryWaitForReadyNode can just spin on atomic counter till it becomes > 0 (or until lastTaskDone)
 ****** ideally, it should wait on the atomic counter, but whatever 
 **** ConcurrentModificationException for one method (cos I removed all the synchronized blocks)
-*** Test with non-linear schedule 
+*** DONE Test without the assert -> works sometimes
+    CLOCK: [2013-04-29 Mon 01:17]--[2013-04-29 Mon 01:27] =>  0:10
+*** DONE Ensure that contracts for methods hold after adding the isScheduled field and after ReadyNodeListener
+    CLOCK: [2013-04-29 Mon 00:38]--[2013-04-29 Mon 00:53] =>  0:15
+    CLOCK: [2013-04-29 Mon 00:22]--[2013-04-29 Mon 00:38] =>  0:16
+*** DONE Test with non-linear schedule 
     CLOCK: [2013-04-29 Mon 00:55]--[2013-04-29 Mon 01:17] =>  0:22
     CLOCK: [2013-04-28 Sun 22:24]--[2013-04-28 Sun 22:26] =>  0:02
 **** VVIP I think the ConcurrentModificationException happens when I try to print taskGraph (might be cos you need to ITERATE OVER THE NODES in toString())
 **** VVIP It also happens when I iterate over taskGraph.vertexSet() in getReadyNode
-*** TODO Test without the assert - works sometimes
-    CLOCK: [2013-04-29 Mon 01:17]--[2013-04-29 Mon 01:27] =>  0:10
-*** TODO Why not have a set of ready nodes?
-    CLOCK: [2013-04-29 Mon 01:27]--[2013-04-29 Mon 01:55] =>  0:28
-**** ConcurrentSkipListMap
-**** DONE Bug: cos Activation didn't implement Comparable, it gave a ClassCastException, but it was in the other thread and it failed -> deadlock
-*** DONE Ensure that contracts for methods hold after adding the isScheduled field and after ReadyNodeListener
-    CLOCK: [2013-04-29 Mon 00:38]--[2013-04-29 Mon 00:53] =>  0:15
-    CLOCK: [2013-04-29 Mon 00:22]--[2013-04-29 Mon 00:38] =>  0:16
+*** DONE Try with synchronized blocks
+    CLOCK: [2013-04-29 Mon 02:05]--[2013-04-29 Mon 02:26] =>  0:21
+**** It works!!! I'm a Genius! Or am I?
+*** DONE Try fib with k = 15
+    CLOCK: [2013-04-29 Mon 02:26]--[2013-04-29 Mon 02:44] =>  0:18
+**** It works at times, cups at other times
+**** DONE I think it might be because an assert fails in the other thread => Deadlock
+     CLOCK: [2013-04-29 Mon 02:44]--[2013-04-29 Mon 02:44] =>  0:00
+***** Remove all asserts that can run in other threads
+      CLOCK: [2013-04-29 Mon 02:44]--[2013-04-29 Mon 02:59] =>  0:15
+***** DONE Try catching RuntimeException in Activation to see the Stack Trace in non-main threads - Master Stroke
+      CLOCK: [2013-04-29 Mon 02:59]--[2013-04-29 Mon 03:02] =>  0:03
+****** DONE I'm getting answers like 18 instead of 21 or 605 instead of 610, meaning that some threads' outputs must have been lost
+*** DONE The problem seems to be that the last task somehow gets scheduled before everything else and when the others run afterward, you get exceptions like "no such vertex in graph" when trying to add an edge
+**** But how could that be? How can (now -> left) go wrong? It is saying that either "now" or "left" isn't in the graph
+**** In another case, either "sum" or "later" isn't in the graph.
+**** DONE Whoa. Could it be because I'm doing addTask before happensBefore and so, getReadyNode is picking the newly added node before the others
+***** DONE Quick check: put a +sleep+ long for loop between the two. i.e., force the error -> Confirmed
+      CLOCK: [2013-04-29 Mon 03:32]--[2013-04-29 Mon 03:36] =>  0:04
+****** sleep didn't do the trick
+****** had to go for a for-loop
+***** DONE How to make sure the newly added task isn't picked before its edges are added?
+      CLOCK: [2013-04-29 Mon 03:37]--[2013-04-29 Mon 03:44] =>  0:07
+****** getReadyNode is synchronized on "lock"
+****** DONE So, synchronizing this on lock should prevent getReadyNode from picking off a task in the middle
+** TODO Test with other pCPS programs (especially highly parallel programs like Mergesort)
+** TODO Why not have a set of ready nodes? -> Maybe use this if the synchronized blocks in getReadyNode cause performance degradation.
+   CLOCK: [2013-04-29 Mon 01:27]--[2013-04-29 Mon 01:55] =>  0:28
+*** ConcurrentSkipListMap
+*** DONE Bug: cos Activation didn't implement Comparable, it gave a ClassCastException, but it was in the other thread and it failed -> deadlock
 ** TODO Make proper hashCode and equals for Activation, etc.
 ** Make Fib.java look like a complete MiniJava program
 ** TODO Decouple the Task graph from the Scheduler. Make the Scheduler access the graph just like any other Activation.
 ** TODO See if numActiveTasks is accurate. Else, remove.
-
-
-
+** TODO Profile the code
+*** http://www.javaworld.com/jw-04-1997/jw-04-optimize.html

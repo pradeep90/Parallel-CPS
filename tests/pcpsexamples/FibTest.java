@@ -107,7 +107,7 @@ public class FibTest{
     public final void testFib_RecursiveCase2(){
         System.out.println("testFib_RecursiveCase2"); 
 
-        // long lStartTime = System.currentTimeMillis();
+        long lStartTime = System.currentTimeMillis();
 
         Continuation current = new AbstractContinuation(now, later){
                 @Override
@@ -124,12 +124,114 @@ public class FibTest{
 
         fib.scheduler.tryRunTasks();
 
-        // long lEndTime = System.currentTimeMillis();
+        long lEndTime = System.currentTimeMillis();
    
-        // long difference = lEndTime - lStartTime;
+        long difference = lEndTime - lStartTime;
    
-        // System.out.println("Elapsed milliseconds: " + difference);
+        System.out.println("Elapsed time: " + difference + " ms");
 
         assertEquals(13, now.tempResult);
+    }
+
+    /**
+     * Test method for {@link Fib#Fib()}.
+     */
+    // @Ignore
+    @Test
+    public final void testFib_RecursiveCase3(){
+        System.out.println("testFib_RecursiveCase3"); 
+
+        long lStartTime = System.currentTimeMillis();
+
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void run(){
+                    fib.fib(8, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
+
+        fib.scheduler.happensBefore(now, later);
+
+        fib.scheduler.tryRunTasks();
+
+        long lEndTime = System.currentTimeMillis();
+   
+        long difference = lEndTime - lStartTime;
+   
+        System.out.println("Elapsed time: " + difference + " ms");
+
+        assertEquals(21, now.tempResult);
+    }
+
+    /**
+     * Test method for {@link Fib#Fib()}.
+     */
+    // @Ignore
+    @Test
+    public final void testFib_RecursiveCase4(){
+        System.out.println("testFib_RecursiveCase4"); 
+
+        long lStartTime = System.currentTimeMillis();
+
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void run(){
+                    fib.fib(15, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
+
+        fib.scheduler.happensBefore(now, later);
+
+        fib.scheduler.tryRunTasks();
+
+        long lEndTime = System.currentTimeMillis();
+   
+        long difference = lEndTime - lStartTime;
+   
+        System.out.println("Elapsed time: " + difference + " ms");
+
+        assertEquals(610, now.tempResult);
+    }
+
+    /**
+     * Test method for {@link Fib#Fib()}.
+     */
+    // @Ignore
+    @Test
+    public final void testFib_RecursiveCase5(){
+        System.out.println("testFib_RecursiveCase5"); 
+
+        long lStartTime = System.currentTimeMillis();
+
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void run(){
+                    fib.fib(21, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
+
+        fib.scheduler.happensBefore(now, later);
+
+        fib.scheduler.tryRunTasks();
+
+        long lEndTime = System.currentTimeMillis();
+   
+        long difference = lEndTime - lStartTime;
+   
+        System.out.println("Elapsed time: " + difference + " ms");
+
+        assertEquals(10946, now.tempResult);
     }
 }

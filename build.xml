@@ -2,14 +2,14 @@
 
   <!-- Sets variables which can later be used. -->
   <!-- The value of a property is accessed via ${} -->
-  <property name="main-package.name" value="scheduler"/>
+  <property name="main-package.name" value="callabletry"/>
   <property name="src.dir" value="src"/>
   <property name="main-package.dir" value="${src.dir}/${main-package.name}"/>
   <property name="tests-src.dir" value="tests"/>
   <property name="build.dir" value="build"/>
   <property name="classes.dir" value="${build.dir}/classes"/>
   <property name="tests-classes.dir" value="${classes.dir}/tests"/>
-  <property name="main-class" value="${main-package.name}.TryJGraph"/>
+  <property name="main-class" value="${main-package.name}.Factorial"/>
   <property name="jgrapht.jar" value="lib/jgrapht-jdk1.6.jar"/>
   <property name="junit-home.dir" value="/usr/share/java"/>
   <property name="junit-jar.dir" value="${junit-home.dir}/junit4-4.8.2.jar"/>
