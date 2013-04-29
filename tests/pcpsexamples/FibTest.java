@@ -51,7 +51,7 @@ public class FibTest{
 
         fib.scheduler.happensBefore(now, later);
         
-        fib.scheduler.tryRunTasks();
+        fib.scheduler.tryRunTasks(now);
         assertEquals(1, now.tempResult);
     }
 
@@ -73,7 +73,7 @@ public class FibTest{
         fib.scheduler.addTask(later);
 
         fib.scheduler.happensBefore(now, later);
-        fib.scheduler.tryRunTasks();
+        fib.scheduler.tryRunTasks(now);
         assertEquals(1, now.tempResult);
     }
 
@@ -96,7 +96,7 @@ public class FibTest{
 
         fib.scheduler.happensBefore(now, later);
 
-        fib.scheduler.tryRunTasks();
+        fib.scheduler.tryRunTasks(now);
         assertEquals(2, now.tempResult);
     }
 
@@ -122,7 +122,7 @@ public class FibTest{
 
         fib.scheduler.happensBefore(now, later);
 
-        fib.scheduler.tryRunTasks();
+        fib.scheduler.tryRunTasks(now);
 
         long lEndTime = System.currentTimeMillis();
    
@@ -146,7 +146,7 @@ public class FibTest{
         Continuation current = new AbstractContinuation(now, later){
                 @Override
                 public void run(){
-                    fib.fib(8, now, later);
+                    fib.fib(11, now, later);
                 }
             };
         now.continuation = current;
@@ -156,7 +156,7 @@ public class FibTest{
 
         fib.scheduler.happensBefore(now, later);
 
-        fib.scheduler.tryRunTasks();
+        fib.scheduler.tryRunTasks(now);
 
         long lEndTime = System.currentTimeMillis();
    
@@ -164,7 +164,7 @@ public class FibTest{
    
         System.out.println("Elapsed time: " + difference + " ms");
 
-        assertEquals(21, now.tempResult);
+        assertEquals(89, now.tempResult);
     }
 
     /**
@@ -190,7 +190,7 @@ public class FibTest{
 
         fib.scheduler.happensBefore(now, later);
 
-        fib.scheduler.tryRunTasks();
+        fib.scheduler.tryRunTasks(now);
 
         long lEndTime = System.currentTimeMillis();
    
@@ -224,7 +224,7 @@ public class FibTest{
 
         fib.scheduler.happensBefore(now, later);
 
-        fib.scheduler.tryRunTasks();
+        fib.scheduler.tryRunTasks(now);
 
         long lEndTime = System.currentTimeMillis();
    

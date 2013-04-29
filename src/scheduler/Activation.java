@@ -1,6 +1,8 @@
 package scheduler;
 
 import java.lang.Runnable;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Activation implements Runnable, Comparable<Activation> {
     public Continuation continuation;
@@ -8,6 +10,11 @@ public class Activation implements Runnable, Comparable<Activation> {
     public Scheduler scheduler;
     public int tempResult;
 
+    private long id;
+
+    // TODO: This might lead to overflow for large programs
+    public static final AtomicLong idGenerator = new AtomicLong();
+    
     private boolean isScheduled;
     
     public Activation(Scheduler scheduler) {
@@ -18,20 +25,11 @@ public class Activation implements Runnable, Comparable<Activation> {
         this.tempResult = result;
         this.scheduler = scheduler;
         this.isScheduled = false;
+        this.id = idGenerator.getAndIncrement();
     }
 
     public int compareTo(Activation other){
-        int ourHashCode = this.hashCode();
-        int otherHashCode = other.hashCode();
-        
-        if (ourHashCode == otherHashCode){
-            return 0;
-        }
-        else if (ourHashCode < otherHashCode){
-            return -1;
-        } else{
-            return 1;
-        }
+        return new Long(this.id).compareTo(new Long(other.id));
     }
     
     // public Activation(Continuation continuation, Result result) {
@@ -45,22 +43,23 @@ public class Activation implements Runnable, Comparable<Activation> {
     // }
 
     @Override
-        public void run(){
-        if (continuation != null){
-            if (scheduler.DEBUG_ON){
-                System.out.println("Activation: run()"); 
-            }
-            try {
+    public void run(){
+        try {
+            if (continuation != null){
+                if (scheduler.DEBUG_ON){
+                    System.out.println("Activation: run()"); 
+                }
                 continuation.run();
-            } catch(RuntimeException e) {
-                e.printStackTrace();
+                if (scheduler.DEBUG_ON){
+                    System.out.println("Activation: completed run()"); 
+                }
             }
-
-            if (scheduler.DEBUG_ON){
-                System.out.println("Activation: completed run()"); 
-            }
+            scheduler.signalTaskDone(this);
+        } catch(RuntimeException e) {
+            e.printStackTrace();
+        } catch(AssertionError e) {
+            e.printStackTrace();
         }
-        scheduler.signalTaskDone(this);
     }
 
     public boolean isScheduled(){

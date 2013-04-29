@@ -43,6 +43,8 @@ public class Scheduler {
 
     private boolean lastTaskDone;
     public static final boolean DEBUG_ON = false;
+
+    public Random randomGenerator;
     
     /**
      * numReadyNodes may be incremented by concurrent threads (as
@@ -69,6 +71,8 @@ public class Scheduler {
         
         executor = Executors.newFixedThreadPool(NUM_THREADS);
         lastTaskDone = false;
+
+        randomGenerator = new Random();
     }
 
     public void addTask(Activation activation){
@@ -78,10 +82,6 @@ public class Scheduler {
     }
 
     public void happensBefore(Activation from, Activation to){
-        // if (DEBUG_ON){
-        //     System.out.println("from: " + from);
-        //     System.out.println("to: " + to);
-        // }
         synchronized (lock){
             taskGraph.addEdge(from, to);
             assert taskGraph.containsEdge(from, to): "Must contain the edge";
@@ -90,7 +90,10 @@ public class Scheduler {
 
     public void signalSomeNodeIsReady(Activation givenReadyNode){
         numReadyNodes.incrementAndGet();
-        readyNodes.add(givenReadyNode);
+        boolean wasNotAlreadyPresent = readyNodes.add(givenReadyNode);
+        assert wasNotAlreadyPresent: "givenReadyNode must not already be in the set.";
+        // assert false: "checking";
+        
         if (DEBUG_ON){
             System.out.println("signalSomeNodeIsReady: numReadyNodes.get(): " + numReadyNodes.get());
         }
@@ -170,7 +173,8 @@ public class Scheduler {
         // System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
 
         // TODO: In the future, do a non-blocking wait or something
-        while (numReadyNodes.get() == 0 && !isLastTaskDone()){
+        // while (numReadyNodes.get() == 0 && !isLastTaskDone()){
+        while (readyNodes.isEmpty() && !isLastTaskDone()){
             // try {
             // Thread.sleep(1000);
 
@@ -201,22 +205,26 @@ public class Scheduler {
     public Activation getReadyNode(){
         Activation result;
         synchronized (lock){
-            assert numReadyNodes.get() > 0: "must be at least one ready node";
+            assert !readyNodes.isEmpty(): "must be at least one ready node";
+            result = readyNodes.iterator().next();
+            assert !result.isScheduled(): "ready node must be unscheduled";
+            
+            // assert numReadyNodes.get() > 0: "must be at least one ready node";
         
             // TODO: remove this later
-            assert !taskGraph.vertexSet().isEmpty(): "Vertex set can't be empty";
+            // assert !taskGraph.vertexSet().isEmpty(): "Vertex set can't be empty";
 
             // TODO: Maybe use ReadyNodeListener's DirectedNeighborIndex
             // to check the degree, etc.
-            result = null;
-            for (Activation currActivation : taskGraph.vertexSet()){
-                if (!currActivation.isScheduled()
-                    && taskGraph.inDegreeOf(currActivation) == 0){
+            // result = null;
+            // for (Activation currActivation : taskGraph.vertexSet()){
+            //     if (!currActivation.isScheduled()
+            //         && taskGraph.inDegreeOf(currActivation) == 0){
 
-                    result = currActivation;
-                    break;
-                }
-            }
+            //         result = currActivation;
+            //         break;
+            //     }
+            // }
         }
 
         assert result != null: "ready node must exist";
@@ -272,17 +280,21 @@ public class Scheduler {
         // task.run();
     }
 
-    /** 
+    /**
+     * @precondition firstTask is a ready node
+     * 
      * Guaranteed that there will be at least one zero-degree node
      * inside the loop cos at least one of the last task's subtasks
      * (e.g., the first function call) will be ready. Basically, no
      * circular happensBefore dependences in the schedule.
      */
-    public void tryRunTasks(){
+    public void tryRunTasks(Activation firstTask){
         if (DEBUG_ON){
             System.out.println("hello"); 
         }
 
+        readyNodes.add(firstTask);
+        
         // Exit loop when last activation has finished
         while (!isLastTaskDone()){
             tryWaitForReadyNode();
