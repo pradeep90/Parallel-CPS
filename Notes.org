@@ -501,12 +501,14 @@
      CLOCK: [2013-04-29 Mon 12:19]--[2013-04-29 Mon 12:25] =>  0:06
 **** DONE I think I'll just go with a unique id for each Activation
      CLOCK: [2013-04-29 Mon 12:25]--[2013-04-29 Mon 12:32] =>  0:07
-** TODO Test with other pCPS programs (especially highly parallel programs like Mergesort)
-** TODO Why not have a set of ready nodes? -> Maybe use this if the synchronized blocks in getReadyNode cause performance degradation.
+** DONE Why not have a set of ready nodes? -> Maybe use this if the synchronized blocks in getReadyNode cause performance degradation. [Order of magnitude difference]
    CLOCK: [2013-04-29 Mon 10:19]--[2013-04-29 Mon 11:02] =>  0:43
    CLOCK: [2013-04-29 Mon 01:27]--[2013-04-29 Mon 01:55] =>  0:28
 *** ConcurrentSkipListMap
 *** DONE Bug: cos Activation didn't implement Comparable, it gave a ClassCastException, but it was in the other thread and it failed -> deadlock
+*** fib(21): Iteration-based getReadyNode -> 15336ms
+*** fib(21): readyNodes-based getReadyNode -> 1953ms
+** TODO Test with other pCPS programs (especially highly parallel programs like Mergesort)
 ** TODO Make proper hashCode and equals for Activation, etc.
 ** TODO Make Fib.java look like a complete MiniJava program
 ** TODO Decouple the Task graph from the Scheduler. Make the Scheduler access the graph just like any other Activation.
