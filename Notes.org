@@ -518,14 +518,62 @@
 *** http://www.javaworld.com/jw-04-1997/jw-04-optimize.html
 * VVIP Optimize - Make them actually run in parallel
 ** I have the suspicion that the threads aren't actually running in parallel, cos System Monitor shows that the cores alternate in getting maxed out.
-** Remove unnecessary synchronized blocks
+** DONE Remove unnecessary synchronized blocks
+** It seems that most of the time is spent waiting in the while loop in tryWaitForReadyNode
+*** tested using totalWaitingTime - Look at that. Nearly all of the running time seems to be in the while loop. 
+    k: 8
+    totalWaitingTime: 46435289 ns
+    totalWaitingTime: 29426778 ns
+    totalWaitingTime: 30899654 ns
+    totalWaitingTime: 46054096 ns
+    totalWaitingTime: 36141633 ns
+    totalWaitingTime: 23172386 ns
+    totalWaitingTime: 37507030 ns
+    totalWaitingTime: 40551886 ns
+    totalWaitingTime: 33144968 ns
+    totalWaitingTime: 50391912 ns
+    ParallelCPSFib: (10 rounds, MAX_ITERS: 500000): 49842389 ns
+*** However, it could be that this thread was pre-empted and so it just sees that the totalWaitingTime was long but it may not have wasted time spinning... (Is that possible?)
+*** DONE Use condition variable - No big change
+    CLOCK: [2013-05-03 Fri 02:10]--[2013-05-03 Fri 02:37] =>  0:27
+*** Data
+    k: 8
+    SequentialRecursiveFib: (10 rounds, MAX_ITERS: 500000): 21354558 ns
+    totalWaitingTime: 26343722 ns
+    totalWaitingTime: 35125034 ns
+    totalWaitingTime: 43137672 ns
+    totalWaitingTime: 37564788 ns
+    totalWaitingTime: 31498467 ns
+    totalWaitingTime: 38950078 ns
+    totalWaitingTime: 17840022 ns
+    totalWaitingTime: 21927678 ns
+    totalWaitingTime: 19982886 ns
+    totalWaitingTime: 15144377 ns
+    ParallelCPSFib: (10 rounds, MAX_ITERS: 500000): 38054713 ns
+** Just realized that the empty for-loop should be in fib not in the continuations
+   CLOCK: [2013-05-03 Fri 02:47]--[2013-05-03 Fri 02:54] =>  0:07
+** RESULT! Speedup = 1.89
+   SequentialRecursiveFib: (10 rounds, MAX_ITERS: 5000000): 565849758 ns
+   totalWaitingTime: 251584444 ns
+   totalWaitingTime: 261728913 ns
+   totalWaitingTime: 327557840 ns
+   totalWaitingTime: 258405322 ns
+   totalWaitingTime: 247496584 ns
+   totalWaitingTime: 239591990 ns
+   totalWaitingTime: 266336389 ns
+   totalWaitingTime: 257070874 ns
+   totalWaitingTime: 258054308 ns
+   totalWaitingTime: 277160267 ns
+   ParallelCPSFib: (10 rounds, MAX_ITERS: 5000000): 299027388 ns
+** Next try, Speedup = 1.88
 * Remaining work
-** VVIP Major example to show actual speedup
+** DONE Major example to show actual speedup
 *** insert as big a loop as necessary in the task so that you get some speedup
 ** Examples
 *** medium parallelism - fibo
 *** low parallelism - (show that an edge is necessary) factorial
 *** high parallelism - map function on a list (show that an edge is not necessary)
+** DONE Condition variable
 ** Optimization
 *** Schedule -> Optimized schedule
 ** Program + Schedule -> happensBefore edges

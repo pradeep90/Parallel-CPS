@@ -11,7 +11,7 @@ public class Fib {
 
     private static final boolean NON_LINEAR_SCHEDULE = true;
     // public static final long MAX_ITERS = 1L;
-    public static final long MAX_ITERS = 500000L;
+    public static final long MAX_ITERS = 5000000L;
     
     public Fib() {
         scheduler = new Scheduler();
@@ -21,6 +21,9 @@ public class Fib {
         if (k <= 2) {
             now.tempResult = 1;
         } else {
+            for (long i = 0; i < MAX_ITERS; i++){
+            }
+
             //make left and right available inside closure
             Activation left = new Activation(scheduler);
             Activation right = new Activation(scheduler);
@@ -107,9 +110,6 @@ class ContinuationLeft extends AbstractContinuation {
         
     @Override
     public void run(){
-        for (long i = 0; i < object.MAX_ITERS; i++){
-        }
-
         object.fib(k - 1, now, later);
     }
 }
@@ -127,8 +127,6 @@ class ContinuationRight extends AbstractContinuation {
         
     @Override
     public void run(){
-        for (long i = 0; i < object.MAX_ITERS; i++){
-        }
         object.fib(k - 2, now, later);
     }
 }

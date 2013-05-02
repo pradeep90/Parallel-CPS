@@ -14,6 +14,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /** 
  * Class for scheduling tasks obeying the happensBefore constraints
@@ -38,6 +41,10 @@ public class Scheduler {
     ConcurrentSkipListSet<Activation> readyNodes;
     
     public final Object lock = new Object();
+
+    public final Lock readyNodeAvailableLock = new ReentrantLock();
+    public final Condition readyNodeAvailableCondition =
+            readyNodeAvailableLock.newCondition();
     
     public ExecutorService executor;
 
@@ -45,6 +52,8 @@ public class Scheduler {
     public static final boolean DEBUG_ON = false;
 
     public Random randomGenerator;
+
+    long totalWaitingTime = 0;
     
     /**
      * numReadyNodes may be incremented by concurrent threads (as
@@ -91,6 +100,15 @@ public class Scheduler {
     public void signalSomeNodeIsReady(Activation givenReadyNode){
         numReadyNodes.incrementAndGet();
         boolean wasNotAlreadyPresent = readyNodes.add(givenReadyNode);
+        readyNodeAvailableLock.lock();
+        try {
+            // TODO: Should I always signal or should I do it only
+            // when readyNodes was empty?
+            readyNodeAvailableCondition.signal();
+        } finally {
+            readyNodeAvailableLock.unlock();
+        }
+
         assert wasNotAlreadyPresent: "givenReadyNode must not already be in the set.";
         // assert false: "checking";
         
@@ -146,6 +164,14 @@ public class Scheduler {
         }
 
         lastTaskDone = true;
+        readyNodeAvailableLock.lock();
+        try {
+            // TODO: Should I always signal or should I do it only
+            // when readyNodes was empty?
+            readyNodeAvailableCondition.signal();
+        } finally {
+            readyNodeAvailableLock.unlock();
+        }
     }
 
     /** 
@@ -163,34 +189,31 @@ public class Scheduler {
      * finished.
      */
     public void tryWaitForReadyNode(){
-        // Set<Activation> nodes;
-        // // synchronized (lock){
-        // nodes = taskGraph.vertexSet();
-        // System.out.println("tryWaitForReadyNode: Last seen here"); 
-        // System.out.println("taskGraph: " + taskGraph);
-        // // }
-        // System.out.println("nodes.isEmpty(): " + nodes.isEmpty());
-        // System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
-
         // TODO: In the future, do a non-blocking wait or something
         // while (numReadyNodes.get() == 0 && !isLastTaskDone()){
-        while (readyNodes.isEmpty() && !isLastTaskDone()){
-            // try {
-            // Thread.sleep(1000);
+        long startTime = System.nanoTime();
 
-            // TODO: turn the printlining on
+        readyNodeAvailableLock.lock();
+        
+        try {
+            while (readyNodes.isEmpty() && !isLastTaskDone()){
+                readyNodeAvailableCondition.await();
 
-            if (DEBUG_ON){
-                // System.out.println("tryWaitForReadyNode: still in loop"); 
-                // System.out.println("tryWaitForReadyNode: numReadyNodes.get(): "
-                //                    + numReadyNodes.get());
-                // System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
+                if (DEBUG_ON){
+                    // System.out.println("tryWaitForReadyNode: still in loop"); 
+                    // System.out.println("tryWaitForReadyNode: numReadyNodes.get(): "
+                    //                    + numReadyNodes.get());
+                    // System.out.println("!isLastTaskDone(): " + !isLastTaskDone());
+                }
             }
-
-            // } catch (InterruptedException ie) {
-            //     //Handle exception
-            // }
+        } catch(InterruptedException e){
+            e.printStackTrace();
+        } finally {
+            readyNodeAvailableLock.unlock();
         }
+
+        totalWaitingTime += System.nanoTime() - startTime;
+        
         if (DEBUG_ON){
             System.out.println("out of tryWaitForReadyNode"); 
         }
@@ -204,28 +227,9 @@ public class Scheduler {
      */
     public Activation getReadyNode(){
         Activation result;
-        synchronized (lock){
-            assert !readyNodes.isEmpty(): "must be at least one ready node";
-            result = readyNodes.iterator().next();
-            assert !result.isScheduled(): "ready node must be unscheduled";
-            
-            // assert numReadyNodes.get() > 0: "must be at least one ready node";
-        
-            // TODO: remove this later
-            // assert !taskGraph.vertexSet().isEmpty(): "Vertex set can't be empty";
-
-            // TODO: Maybe use ReadyNodeListener's DirectedNeighborIndex
-            // to check the degree, etc.
-            // result = null;
-            // for (Activation currActivation : taskGraph.vertexSet()){
-            //     if (!currActivation.isScheduled()
-            //         && taskGraph.inDegreeOf(currActivation) == 0){
-
-            //         result = currActivation;
-            //         break;
-            //     }
-            // }
-        }
+        assert !readyNodes.isEmpty(): "must be at least one ready node";
+        result = readyNodes.iterator().next();
+        assert !result.isScheduled(): "ready node must be unscheduled";
 
         assert result != null: "ready node must exist";
         return result;
@@ -318,6 +322,7 @@ public class Scheduler {
         }
         // TODO: Maybe put this in a finally block
         executor.shutdownNow();
+        // System.out.println("totalWaitingTime: " + totalWaitingTime + " ns");
     }
 
     public String toString(){
