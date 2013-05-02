@@ -19,7 +19,8 @@ public class FibTest{
     Fib fib;
     Activation now;
     Activation later;
-
+    public static final int NUM_ITERS = 50;
+    
     @Before
     public void setUp(){
         fib = new Fib();
@@ -35,6 +36,7 @@ public class FibTest{
     /**
      * Test method for {@link Fib#Fib()}.
      */
+    // @Ignore
     @Test
     public final void testFib_BaseCase1(){
         System.out.println("testFib_BaseCase1"); 
@@ -58,6 +60,7 @@ public class FibTest{
     /**
      * Test method for {@link Fib#Fib()}.
      */
+    // @Ignore
     @Test
     public final void testFib_BaseCase2(){
         System.out.println("testFib_BaseCase2"); 
@@ -80,6 +83,7 @@ public class FibTest{
     /**
      * Test method for {@link Fib#Fib()}.
      */
+    // @Ignore
     @Test
     public final void testFib_RecursiveCase1(){
         System.out.println("testFib_RecursiveCase1"); 
@@ -103,6 +107,7 @@ public class FibTest{
     /**
      * Test method for {@link Fib#Fib()}.
      */
+    // @Ignore
     @Test
     public final void testFib_RecursiveCase2(){
         System.out.println("testFib_RecursiveCase2"); 
@@ -204,12 +209,10 @@ public class FibTest{
     /**
      * Test method for {@link Fib#Fib()}.
      */
-    // @Ignore
+    @Ignore
     @Test
     public final void testFib_RecursiveCase5(){
         System.out.println("testFib_RecursiveCase5"); 
-
-        long lStartTime = System.currentTimeMillis();
 
         Continuation current = new AbstractContinuation(now, later){
                 @Override
@@ -217,6 +220,22 @@ public class FibTest{
                     fib.fib(21, now, later);
                 }
             };
+
+        long lStartTime = System.currentTimeMillis();
+        for (int i = 0; i < 1; i++){
+            runFib(current);
+        }
+        
+        long lEndTime = System.currentTimeMillis();
+   
+        long difference = lEndTime - lStartTime;
+   
+        System.out.println("Elapsed time: " + difference + " ms");
+
+        assertEquals(10946, now.tempResult);
+    }
+
+    public void runFib(Continuation current){
         now.continuation = current;
 
         fib.scheduler.addTask(now);
@@ -225,13 +244,48 @@ public class FibTest{
         fib.scheduler.happensBefore(now, later);
 
         fib.scheduler.tryRunTasks(now);
+    }
 
-        long lEndTime = System.currentTimeMillis();
-   
-        long difference = lEndTime - lStartTime;
-   
-        System.out.println("Elapsed time: " + difference + " ms");
 
-        assertEquals(10946, now.tempResult);
+    /**
+     * Test method for {@link Fib#getFib()}.
+     */
+    // @Ignore
+    @Test
+    public final void testGetFib(){
+        assertEquals(10946, Fib.getFib(21));
+    }
+
+    /**
+     * Test method for {@link Fib#getRecursiveFib()}.
+     */
+    // @Ignore
+    @Test
+    public final void testGetRecursiveFib(){
+        assertEquals(10946, Fib.getRecursiveFib(21));
+    }
+
+    /**
+     * Test method for {@link Fib#()}.
+     */
+    @Test
+    public final void testCollectRunningTime(){
+        final int k = 8;
+
+        System.out.println(""); 
+        System.out.println("k: " + k);
+        MethodCall methodCall1 = new MethodCall("SequentialRecursiveFib"){
+                public void call(){
+                    Fib.getRecursiveFib(k);
+                }
+            };
+        // methodCall1.measure();
+
+        MethodCall methodCall2 = new MethodCall("ParallelCPSFib"){
+                public void call(){
+                    Fib.getFib(k);
+                }
+            };
+        methodCall2.measure();
     }
 }

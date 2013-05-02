@@ -1,14 +1,17 @@
 package pcpsexamples;
 
-import scheduler.Activation;
 import scheduler.AbstractContinuation;
+import scheduler.Activation;
 import scheduler.Continuation;
+import scheduler.LastActivation;
 import scheduler.Scheduler;
 
 public class Fib {
     public Scheduler scheduler;
 
     private static final boolean NON_LINEAR_SCHEDULE = true;
+    // public static final long MAX_ITERS = 1L;
+    public static final long MAX_ITERS = 500000L;
     
     public Fib() {
         scheduler = new Scheduler();
@@ -55,8 +58,38 @@ public class Fib {
         }
     }
 
-    public void methodFib1(int k, Activation now, Activation later){
-        fib(k - 1, now, later);
+    public static int getFib(final int k){
+        final Fib fib = new Fib();
+        Activation now = new Activation(fib.scheduler);
+        Activation later = new LastActivation(fib.scheduler);
+        Continuation current = new AbstractContinuation(now, later){
+                @Override
+                public void run(){
+                    fib.fib(k, now, later);
+                }
+            };
+        now.continuation = current;
+
+        fib.scheduler.addTask(now);
+        fib.scheduler.addTask(later);
+
+        fib.scheduler.happensBefore(now, later);
+
+        fib.scheduler.tryRunTasks(now);
+
+        return now.tempResult;
+    }
+
+    public static int getRecursiveFib(int k){
+        if (k <= 2){
+            return 1;
+        }
+
+        for (int i = 0; i < MAX_ITERS; i++){
+            
+        }
+
+        return Fib.getRecursiveFib(k - 1) + Fib.getRecursiveFib(k - 2);
     }
 }
     
@@ -74,6 +107,9 @@ class ContinuationLeft extends AbstractContinuation {
         
     @Override
     public void run(){
+        for (long i = 0; i < object.MAX_ITERS; i++){
+        }
+
         object.fib(k - 1, now, later);
     }
 }
@@ -91,6 +127,8 @@ class ContinuationRight extends AbstractContinuation {
         
     @Override
     public void run(){
+        for (long i = 0; i < object.MAX_ITERS; i++){
+        }
         object.fib(k - 2, now, later);
     }
 }

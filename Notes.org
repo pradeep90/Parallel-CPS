@@ -508,6 +508,7 @@
 *** DONE Bug: cos Activation didn't implement Comparable, it gave a ClassCastException, but it was in the other thread and it failed -> deadlock
 *** fib(21): Iteration-based getReadyNode -> 15336ms
 *** fib(21): readyNodes-based getReadyNode -> 1953ms
+** TODO Use a condition variable in tryWaitForReadyNode
 ** TODO Test with other pCPS programs (especially highly parallel programs like Mergesort)
 ** TODO Make proper hashCode and equals for Activation, etc.
 ** TODO Make Fib.java look like a complete MiniJava program
@@ -515,3 +516,22 @@
 ** TODO See if numActiveTasks is accurate. Else, remove.
 ** TODO Profile the code
 *** http://www.javaworld.com/jw-04-1997/jw-04-optimize.html
+* VVIP Optimize - Make them actually run in parallel
+** I have the suspicion that the threads aren't actually running in parallel, cos System Monitor shows that the cores alternate in getting maxed out.
+** Remove unnecessary synchronized blocks
+* Remaining work
+** VVIP Major example to show actual speedup
+*** insert as big a loop as necessary in the task so that you get some speedup
+** Examples
+*** medium parallelism - fibo
+*** low parallelism - (show that an edge is necessary) factorial
+*** high parallelism - map function on a list (show that an edge is not necessary)
+** Optimization
+*** Schedule -> Optimized schedule
+** Program + Schedule -> happensBefore edges
+** CPS -> pCPS
+* Running time
+** Fib
+*** k = 21, NUM_ITERS = 50
+**** with linear schedule: 676ms 
+**** with non-linear schedule: 489ms

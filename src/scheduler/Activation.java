@@ -28,7 +28,15 @@ public class Activation implements Runnable, Comparable<Activation> {
     }
 
     public int compareTo(Activation other){
-        return new Long(this.id).compareTo(new Long(other.id));
+        if (this.id < other.id){
+            return -1;
+        } else if (this.id > other.id){
+            return +1;
+        } else {
+            return 0;
+        }
+
+        // return new Long(this.id).compareTo(new Long(other.id));
     }
     
     // public Activation(Continuation continuation, Result result) {

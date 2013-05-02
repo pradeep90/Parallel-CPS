@@ -242,7 +242,9 @@ public class Scheduler {
         // System.out.println("lastTaskDone: " + lastTaskDone);
         if (lastTaskDone){
             assert taskGraph.vertexSet().isEmpty(): "No tasks must remain";
-            System.out.println("assert in isLastTaskDone done"); 
+            if (DEBUG_ON){
+                System.out.println("assert in isLastTaskDone done"); 
+            }
         }
 
         return lastTaskDone;
@@ -268,6 +270,7 @@ public class Scheduler {
         readyNodes.remove(task);
         numReadyNodes.decrementAndGet();
         numActiveTasks++;
+        // System.out.println("numActiveTasks: " + numActiveTasks);
 
         if (DEBUG_ON){
             System.out.println("runReadyTask: task: " + task);

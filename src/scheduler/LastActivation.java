@@ -8,9 +8,13 @@ public class LastActivation extends Activation {
     @Override
     public void run(){
         super.run();
-        System.out.println("LastActivation running"); 
+        if (scheduler.DEBUG_ON){
+            System.out.println("LastActivation running"); 
+        }
         scheduler.signalLastTaskDone();
-        System.out.println("LastActivation signalLastTaskDone"); 
+        if (scheduler.DEBUG_ON){
+            System.out.println("LastActivation signalLastTaskDone"); 
+        }
     }
 
     public String toString(){

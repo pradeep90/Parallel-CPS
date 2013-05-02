@@ -12,7 +12,7 @@ public class Factorial {
     private static final int NUM_THREADS = 10;
     public static final int NUM_ITERS = 10;
     public static final int NUM = 25;
-    public static final int FIB_NUM = 33;
+    public static final int FIB_NUM = 8;
     // public static final int FIB_NUM = 15;
 
     // Setting it to 16 causes StackOverflowError
