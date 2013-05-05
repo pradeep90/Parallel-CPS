@@ -1,4 +1,4 @@
-package pcpsexamples;
+package cpsexamples;
 
 import scheduler.AbstractContinuation;
 import scheduler.Activation;
@@ -6,19 +6,15 @@ import scheduler.Continuation;
 import scheduler.LastActivation;
 import scheduler.Scheduler;
 
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.AbstractMap.SimpleEntry;
-
-public class Fib {
+public class SimilarFib {
     public Scheduler scheduler;
 
     private static final boolean NON_LINEAR_SCHEDULE = true;
     public static final long MAX_ITERS = 1L;
     // public static final long MAX_ITERS = 5000000L;
     
-    public Fib() {
-        scheduler = new Scheduler();
+    public SimilarFib() {
+        scheduler = null;
     }
 
     void fib(int k, Activation now, Activation later) {
@@ -41,43 +37,27 @@ public class Fib {
             }
             right.continuation = new ContinuationRight(k, this, right, sum);
             sum.continuation = new ContinuationSum(then, left, right, sum, later);
-          
+
+            {
+                left.run();
+                right.run();
+                sum.run();
+            }
             // synchronized (scheduler.lock){
-                HashSet<Activation> subtasks = new HashSet<Activation>();
-                subtasks.add(left);
-                subtasks.add(right);
-                subtasks.add(sum);
+            //     scheduler.addTask(left);
+            //     scheduler.addTask(right);
+            //     scheduler.addTask(sum);
 
-                HashSet<Entry<Activation, Activation>> constraints
-                        = new HashSet<Entry<Activation, Activation>>();
-                
-                constraints.add(new SimpleEntry(now, left));
-                constraints.add(new SimpleEntry(now, right));
-                constraints.add(new SimpleEntry(now, sum));
-                if (NON_LINEAR_SCHEDULE){
-                    constraints.add(new SimpleEntry(left, sum));
-                } else {
-                    constraints.add(new SimpleEntry(left, right));
-                }
-                constraints.add(new SimpleEntry(right, sum));
-                constraints.add(new SimpleEntry(sum, later));
-
-                scheduler.scheduleSubtasks(subtasks, constraints);
-                
-                // scheduler.addTask(left);
-                // scheduler.addTask(right);
-                // scheduler.addTask(sum);
-
-                // scheduler.happensBefore(now, left);
-                // scheduler.happensBefore(now, right);
-                // scheduler.happensBefore(now, sum);
-                // if (NON_LINEAR_SCHEDULE){
-                //     scheduler.happensBefore(left, sum);
-                // } else {
-                //     scheduler.happensBefore(left, right);
-                // }
-                // scheduler.happensBefore(right, sum);
-                // scheduler.happensBefore(sum, later);
+            //     scheduler.happensBefore(now, left);
+            //     scheduler.happensBefore(now, right);
+            //     scheduler.happensBefore(now, sum);
+            //     if (NON_LINEAR_SCHEDULE){
+            //         scheduler.happensBefore(left, sum);
+            //     } else {
+            //         scheduler.happensBefore(left, right);
+            //     }
+            //     scheduler.happensBefore(right, sum);
+            //     scheduler.happensBefore(sum, later);
             // }
             
             // left→right; //inserted by naive translation
@@ -87,23 +67,22 @@ public class Fib {
     }
 
     public static int getFib(final int k){
-        final Fib fib = new Fib();
-        Activation now = new Activation(fib.scheduler);
-        Activation later = new LastActivation(fib.scheduler);
-        Continuation current = new AbstractContinuation(now, later){
-                @Override
-                public void run(){
-                    fib.fib(k, now, later);
-                }
-            };
-        now.continuation = current;
+        SimilarFib similarFib = new SimilarFib();
+        similarFib.scheduler = null;
+        Activation now = new Activation(similarFib.scheduler);
+        Activation later = new LastActivation(similarFib.scheduler);
+        now.continuation = new ContinuationFib(k, similarFib, now, later);
 
-        fib.scheduler.addTask(now);
-        fib.scheduler.addTask(later);
+        {
+            now.run();
+            later.run();
+        }
+        // similarFib.scheduler.addTask(now);
+        // similarFib.scheduler.addTask(later);
+        // similarFib.scheduler.happensBefore(now, later);
 
-        fib.scheduler.happensBefore(now, later);
-
-        fib.scheduler.tryRunTasks(now);
+        // VVIP: MAIN-CALL
+        // similarFib.scheduler.tryRunTasks(now);
 
         return now.tempResult;
     }
@@ -117,15 +96,34 @@ public class Fib {
             
         }
 
-        return Fib.getRecursiveFib(k - 1) + Fib.getRecursiveFib(k - 2);
+        return SimilarFib.getRecursiveFib(k - 1) + SimilarFib.getRecursiveFib(k - 2);
     }
 }
+
+// Continuation for the fib method as a whole
+class ContinuationFib extends AbstractContinuation {
+    int k;
+    SimilarFib object;
     
+    public ContinuationFib(int k, SimilarFib object,
+                            Activation now, Activation later){
+        super(now, later);
+        name = "Fib k: " + k;
+        this.k = k;
+        this.object = object;
+    }
+        
+    @Override
+    public void run(){
+        object.fib(k, now, later);
+    }
+}
+
 class ContinuationLeft extends AbstractContinuation {
     int k;
-    Fib object;
+    SimilarFib object;
     
-    public ContinuationLeft(int k, Fib object,
+    public ContinuationLeft(int k, SimilarFib object,
                             Activation now, Activation later){
         super(now, later);
         name = "Left k: " + k + " k-1: " + (k - 1);
@@ -141,9 +139,9 @@ class ContinuationLeft extends AbstractContinuation {
     
 class ContinuationRight extends AbstractContinuation {
     int k;
-    Fib object;
+    SimilarFib object;
     
-    public ContinuationRight(int k, Fib object, Activation now, Activation later){
+    public ContinuationRight(int k, SimilarFib object, Activation now, Activation later){
         super(now, later);
         name = "Right k: " + k + " k-2: " + (k - 2);
         this.k = k;

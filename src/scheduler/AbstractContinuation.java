@@ -10,6 +10,10 @@ public abstract class AbstractContinuation implements Continuation {
         this.later = later;
     }
 
+    public AbstractContinuation(){
+        this.name = "NormalContinuation";
+    }
+
     public abstract void run();
 
     public String toString(){

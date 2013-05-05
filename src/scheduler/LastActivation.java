@@ -11,7 +11,11 @@ public class LastActivation extends Activation {
         if (scheduler.DEBUG_ON){
             System.out.println("LastActivation running"); 
         }
-        scheduler.signalLastTaskDone();
+
+        if (scheduler != null){
+            scheduler.signalLastTaskDone();
+        }
+
         if (scheduler.DEBUG_ON){
             System.out.println("LastActivation signalLastTaskDone"); 
         }

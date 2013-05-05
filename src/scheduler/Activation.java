@@ -61,7 +61,9 @@ public class Activation implements Runnable, Comparable<Activation> {
                     System.out.println("Activation: completed run()"); 
                 }
             }
-            scheduler.signalTaskDone(this);
+            if (scheduler != null){
+                scheduler.signalTaskDone(this);
+            }
         } catch(RuntimeException e) {
             e.printStackTrace();
         } catch(AssertionError e) {

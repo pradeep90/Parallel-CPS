@@ -264,29 +264,4 @@ public class FibTest{
     public final void testGetRecursiveFib(){
         assertEquals(10946, Fib.getRecursiveFib(21));
     }
-
-    /**
-     * Test method for {@link Fib#()}.
-     */
-    // @Ignore
-    @Test
-    public final void testCollectRunningTime(){
-        final int k = 10;
-
-        System.out.println(""); 
-        System.out.println("k: " + k);
-        MethodCall methodCall1 = new MethodCall("SequentialRecursiveFib"){
-                public void call(){
-                    Fib.getRecursiveFib(k);
-                }
-            };
-        methodCall1.measure();
-
-        MethodCall methodCall2 = new MethodCall("ParallelCPSFib"){
-                public void call(){
-                    Fib.getFib(k);
-                }
-            };
-        methodCall2.measure();
-    }
 }

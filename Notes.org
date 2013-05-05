@@ -508,7 +508,7 @@
 *** DONE Bug: cos Activation didn't implement Comparable, it gave a ClassCastException, but it was in the other thread and it failed -> deadlock
 *** fib(21): Iteration-based getReadyNode -> 15336ms
 *** fib(21): readyNodes-based getReadyNode -> 1953ms
-** TODO Use a condition variable in tryWaitForReadyNode
+** DONE Use a condition variable in tryWaitForReadyNode
 ** TODO Test with other pCPS programs (especially highly parallel programs like Mergesort)
 ** TODO Make proper hashCode and equals for Activation, etc.
 ** TODO Make Fib.java look like a complete MiniJava program
@@ -566,7 +566,14 @@
    totalWaitingTime: 277160267 ns
    ParallelCPSFib: (10 rounds, MAX_ITERS: 5000000): 299027388 ns
 ** Next try, Speedup = 1.88
+* Running time
+** Fib
+*** k = 21, NUM_ITERS = 50
+**** with linear schedule: 676ms 
+**** with non-linear schedule: 489ms
 * Remaining work
+** Think
+   CLOCK: [2013-05-05 Sun 15:03]--[2013-05-05 Sun 16:00] =>  0:57
 ** DONE Major example to show actual speedup
 *** insert as big a loop as necessary in the task so that you get some speedup
 ** Examples
@@ -574,12 +581,48 @@
 *** low parallelism - (show that an edge is necessary) factorial
 *** high parallelism - map function on a list (show that an edge is not necessary)
 ** DONE Condition variable
-** Optimization
-*** Schedule -> Optimized schedule
-** Program + Schedule -> happensBefore edges
-** CPS -> pCPS
-* Running time
-** Fib
-*** k = 21, NUM_ITERS = 50
-**** with linear schedule: 676ms 
-**** with non-linear schedule: 489ms
+** TODO Compare CPS vs pCPS
+*** TODO Write CPS code
+    CLOCK: [2013-05-04 Sat 23:05]--[2013-05-04 Sat 23:08] =>  0:03
+**** Fib
+     CLOCK: [2013-05-04 Sat 23:08]--[2013-05-04 Sat 23:50] =>  0:42
+***** DONE Continuations with return values (stored in Activation?)
+      CLOCK: [2013-05-05 Sun 15:03]--[2013-05-05 Sun 15:49] =>  0:46
+      CLOCK: [2013-05-04 Sat 23:50]--[2013-05-05 Sun 00:32] =>  0:42
+***** Result: VERY slow. pCPS is 200x slower than CPS
+**** Map
+**** Factorial
+**** Continuation - basically carry forward the pCPS idea of Activation (??)
+*** TODO Write corresponding pCPS code
+*** TODO Compare CPS, pCPS (linear), pCPS (non-linear)
+*** TODO Check with significant empty for loop
+    CLOCK: [2013-05-05 Sun 23:27]--[2013-05-05 Sun 23:32] =>  0:05
+** TODO Check with and without threads (using task.run()): that should give you the overhead due to all the synchronization
+** Optimize pCPS code + Scheduler
+*** DONE The synchronized block while adding tasks and edges in Fib is only to ensure that the scheduler does not butt in and schedule a subtask thinking no happensBefore edges have been added.
+**** Note: addTask and happensBefore have 
+**** DONE Instead, collect all the nodes and edges and send them to one synchronized function which will add them all in one fell swoop. 
+***** No bone.
+*** DONE Remove unnecessary references to vertexSet in assert statements
+    CLOCK: [2013-05-05 Sun 23:16]--[2013-05-05 Sun 23:21] =>  0:05
+*** where am I doing wait()? And why?
+** TODO Have a queue for subtasks and edges and eliminate all "synchronized" blocks
+*** But remove task can happen in parallel and, so, must be synchronized
+** Fix ScheduleOptimizer
+*** Proper transitive edge deletion
+**** try Transitive Closure
+**** test whether changes on graph.clone() modify the original graph 
+*** non-necessary edge deletion
+** pCPS Program + Schedule -> happensBefore edges + proper arguments for schedule()
+*** Basically, take the pCPS program from the user
+*** Extract the part where you add the vertices and edges (maybe ask them to put it within delimiters)
+**** Maybe ask them to put in an { empty block }
+**** TODO Look for empty blocks throughout the program and optimize the schedule within it
+*** Get the schedule and optimize it
+*** Insert it back
+*** Main idea: Don't pass the "later" Activation to the constructor of the Continuation
+**** Instead, have it as a field of the Activation
+**** Set it towards the end of the method.
+** CPS -> pCPS (or is it MicroJava -> pCPS ?)
+*** Make Fib.java look like a MicroJava program
+** Possible Optimization: Beyond a certain depth / threshold, run tasks sequentially on one thread (i.e., the main thread)

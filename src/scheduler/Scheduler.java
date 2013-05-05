@@ -1,6 +1,7 @@
 package scheduler;
 
 import java.util.*;
+import java.util.Map.Entry;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -54,6 +55,9 @@ public class Scheduler {
     public Random randomGenerator;
 
     long totalWaitingTime = 0;
+
+    // All the tasks in the Scheduler graph (backed by the graph)
+    Set<Activation> nodes;
     
     /**
      * numReadyNodes may be incremented by concurrent threads (as
@@ -73,6 +77,8 @@ public class Scheduler {
         neighbourIndex = new ReadyNodeListener(taskGraph, this);
         taskGraph.addGraphListener(neighbourIndex);
 
+        nodes = taskGraph.vertexSet();
+        
         readyNodes = new ConcurrentSkipListSet<Activation>();
         
         // Initially, NOW Activation is ready
@@ -82,6 +88,24 @@ public class Scheduler {
         lastTaskDone = false;
 
         randomGenerator = new Random();
+    }
+
+    public void scheduleSubtasks(
+        Set<Activation> tasks,
+        Set<Entry<Activation, Activation>> happensBeforeConstraints){
+
+        synchronized (lock) {
+            for (Activation task : tasks){
+                taskGraph.addVertex(task);
+            }
+
+            for (Entry<Activation, Activation> edge : happensBeforeConstraints){
+                Activation from = edge.getKey();
+                Activation to = edge.getValue();
+                taskGraph.addEdge(from, to);
+                assert taskGraph.containsEdge(from, to): "Must contain the edge";
+            }
+        }
     }
 
     public void addTask(Activation activation){
@@ -148,7 +172,6 @@ public class Scheduler {
      * 
      */
     public void signalLastTaskDone(){
-        Set<Activation> nodes = taskGraph.vertexSet();
         if (DEBUG_ON){
             System.out.println("nodes: " + nodes);
         }
@@ -245,7 +268,7 @@ public class Scheduler {
         // System.out.println("isLastTaskDone()"); 
         // System.out.println("lastTaskDone: " + lastTaskDone);
         if (lastTaskDone){
-            assert taskGraph.vertexSet().isEmpty(): "No tasks must remain";
+            assert nodes.isEmpty(): "No tasks must remain";
             if (DEBUG_ON){
                 System.out.println("assert in isLastTaskDone done"); 
             }
@@ -283,8 +306,8 @@ public class Scheduler {
         }
 
         // TODO: 
-        executor.submit(task);
-        // task.run();
+        // executor.submit(task);
+        task.run();
     }
 
     /**
