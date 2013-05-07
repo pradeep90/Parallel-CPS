@@ -81,6 +81,8 @@ public class Activation implements Runnable, Comparable<Activation> {
 
     public String toString(){
         String result = "<Activation: ";
+        result += id;
+        result += ", ";
         result += continuation;
         result += ", ";
         result += tempResult;

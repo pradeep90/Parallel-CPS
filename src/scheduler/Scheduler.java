@@ -306,8 +306,8 @@ public class Scheduler {
         }
 
         // TODO: 
-        // executor.submit(task);
-        task.run();
+        executor.submit(task);
+        // task.run();
     }
 
     /**
