@@ -209,7 +209,7 @@ public class FibTest{
     /**
      * Test method for {@link Fib#Fib()}.
      */
-    @Ignore
+    // @Ignore
     @Test
     public final void testFib_RecursiveCase5(){
         System.out.println("testFib_RecursiveCase5"); 
@@ -250,7 +250,7 @@ public class FibTest{
     /**
      * Test method for {@link Fib#getFib()}.
      */
-    @Ignore
+    // @Ignore
     @Test
     public final void testGetFib(){
         assertEquals(10946, Fib.getFib(21));
@@ -259,7 +259,7 @@ public class FibTest{
     /**
      * Test method for {@link Fib#getRecursiveFib()}.
      */
-    @Ignore
+    // @Ignore
     @Test
     public final void testGetRecursiveFib(){
         assertEquals(10946, Fib.getRecursiveFib(21));

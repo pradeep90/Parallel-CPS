@@ -6,7 +6,7 @@
   <property name="src.dir" value="src"/>
   <property name="main-package.dir" value="${src.dir}/${main-package.name}"/>
   <property name="tests-src.dir" value="tests"/>
-  <property name="build.dir" value="build"/>
+  <property name="build.dir" value="bin"/>
   <property name="classes.dir" value="${build.dir}/classes"/>
   <property name="tests-classes.dir" value="${classes.dir}/tests"/>
   <property name="main-class" value="${main-package.name}.Main"/>

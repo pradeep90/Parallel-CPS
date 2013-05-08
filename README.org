@@ -9,3 +9,9 @@
   The 3nd Workshop on Parallel Execution of Sequential Programs on Multi-core Architectures (PESPMA 2010), co-located with 37th Intl. Symposium on Computer Architecture (ISCA), Saint-Malo, France, June 2010 (bib) 
 
   For more details - go to http://people.inf.ethz.ch/angererc/
+* To compile
+  ant compile
+* To execute src/pcpsexamples/Main.java
+  ant execute
+* To run the unit tests
+  ant test
