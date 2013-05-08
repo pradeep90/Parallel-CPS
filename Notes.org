@@ -598,6 +598,8 @@
 *** TODO Check with significant empty for loop
     CLOCK: [2013-05-05 Sun 23:27]--[2013-05-05 Sun 23:32] =>  0:05
 ** TODO Check with and without threads (using task.run()): that should give you the overhead due to all the synchronization
+*** DONE check without the concurrent set - No go. Just as slow.
+    CLOCK: [2013-05-08 Wed 18:17]--[2013-05-08 Wed 18:30] =>  0:13
 ** Optimize pCPS code + Scheduler
 *** DONE The synchronized block while adding tasks and edges in Fib is only to ensure that the scheduler does not butt in and schedule a subtask thinking no happensBefore edges have been added.
 **** Note: addTask and happensBefore have 
@@ -610,8 +612,10 @@
 *** But remove task can happen in parallel and, so, must be synchronized
 ** Fix ScheduleOptimizer
 *** Proper transitive edge deletion
-**** try Transitive Closure
-**** test whether changes on graph.clone() modify the original graph 
+    CLOCK: [2013-05-05 Sun 23:41]--[2013-05-06 Mon 00:32] =>  0:51
+    CLOCK: [2013-05-05 Sun 23:40]--[2013-05-05 Sun 23:41] =>  0:01
+**** OUTDATED try Transitive Closure. Bad idea. Won't work.
+**** DONE test whether changes on graph.clone() modify the original graph. They do.
 *** non-necessary edge deletion
 ** pCPS Program + Schedule -> happensBefore edges + proper arguments for schedule()
 *** Basically, take the pCPS program from the user
